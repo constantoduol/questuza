@@ -1,0 +1,36 @@
+<div class="card" id="stock_history_card">
+    <h3>Reports</h3>
+    <div class="input-group" style="z-index:0">
+        <input type="text" class="form-control" id="search_stock" placeholder="Search Products">
+        <div class="input-group-addon search" id="search_link"><img src="img/search.png" alt="Search Products"></div>
+    </div>
+   <div id="error_space_admin" class="error" ></div>
+    <hr/>
+    <div class="form-group">
+        <label for="report_type">Report Type</label>
+        <select id="report_type">
+            <option value="stock_history">Stock</option>
+            <option value="commission_history">Commission</option>
+            <option value="tax_history">Tax</option>
+        </select>
+
+        <label for="start_date">Email Address</label>
+        <select id="stock_select_users">
+            <option value="all">All</option>
+        </select>
+        <label for="start_date">Start Date</label>
+        <input type="date" class="form-control" id="start_date" placeholder="Start Date" readonly="readonly">
+
+        <label for="end_date">End Date</label>
+        <input type="date" class="form-control" id="end_date" placeholder="End Date" readonly="readonly">
+
+    </div>
+
+    <div class="input-group button_area">
+        <input type="button" id="stock_history_btn" value="Generate Report" class="btn"/>
+        <input type="button" id="stock_expiry_btn" value="Stock Expiry" class="btn"/>
+        <input type="button" id="stock_low_btn" value="Stock Low" class="btn"/>
+
+    </div>
+
+</div>
