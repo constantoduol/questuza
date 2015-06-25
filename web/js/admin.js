@@ -546,7 +546,7 @@ App.prototype.supplierAndProduct = function(actionType,prodId,supId){
                     transform : {
                         1 : function(supId,index){
                             var name = encodeURIComponent(resp.SUPPLIER_NAME[index]);
-                            return "<a href='#' onclick=app.supplierAccount('transact','"+prodId+"','"+supId+"','"+name+"')>Account</a>";
+                            return "<a href='#' onclick=app.supplierAccount('"+prodId+"','"+supId+"','"+name+"')>Account</a>";
                         },
                         2 : function(value){
                             return "<a href='#' onclick=app.supplierAndProduct('delete','"+prodId+"','"+value+"')>Remove</a>";
@@ -562,7 +562,7 @@ App.prototype.supplierAndProduct = function(actionType,prodId,supId){
 };
 
 
-App.prototype.supplierAccount = function(actionType,prodId,supId,name){
+App.prototype.supplierAccount = function(prodId,supId,name){
     name = decodeURIComponent(name);
     app.ui.modal("","Supplier Account",{
         okText : "Proceed",
@@ -582,7 +582,12 @@ App.prototype.supplierAccount = function(actionType,prodId,supId,name){
                 load : true,
                 success : function (data) {
                     var resp = data.response.data;
-                    
+                    if(resp === "success"){
+                        app.showMessage(app.context.supplier_transact);
+                    }
+                    else if(resp === "fail"){
+                        app.showMessage(data.response.reason);
+                    }
                 }
             });
         }
@@ -694,7 +699,7 @@ App.prototype.allProducts = function (handler) {
 App.prototype.goodsStockHistory = function () {
     var data = app.getFormData(app.context.stock_history);
     var id = $("#search_stock").attr("current-item");
-    id = !id ? "all" : id;
+    id = $("#search_stock").val().trim() === ""  ? "all" : id;
     if (!data)
         return;
     if (Date.parse(data.end_date.value) < Date.parse(data.start_date.value)) {
@@ -795,7 +800,7 @@ App.prototype.goodsStockHistory = function () {
 App.prototype.servicesStockHistory = function () {
     var data = app.getFormData(app.context.stock_history);
     var id = $("#search_stock").attr("current-item");
-    id = !id ? "all" : id;
+    id = $("#search_stock").val().trim() === ""  ? "all" : id;
     if (!data)
         return;
     if (Date.parse(data.end_date.value) < Date.parse(data.start_date.value)) {
@@ -980,6 +985,57 @@ App.prototype.stockHistory = function () {
             }
         });
     }
+    else if(type === "supplier_history"){
+      app.reportHistory({
+            success : function(data){
+                var r = data.response.data;
+                var totalAmount = 0;
+                var totalUnits = 0;
+                app.paginate({
+                    title: "Suppliers",
+                    save_state: true,
+                    save_state_area: "content_area",
+                    onload_handler: app.pages.stock_history,
+                    onload: function () {
+                        app.ui.table({
+                            id_to_append: "paginate_body",
+                            headers: ["Supplier Name", "Product Name","Product Units", "Amount","Entry Type","Narration","Username","Date"],
+                            values: [r.SUPPLIER_NAME, r.PRODUCT_NAME,r.UNITS, r.TRANS_AMOUNT,r.TRAN_TYPE,r.NARRATION,r.USER_NAME,r.CREATED],
+                            include_nums: true,
+                            style: "",
+                            mobile_collapse: true,
+                            summarize : {
+                                cols : [5],
+                                lengths : [30]
+                            },
+                            transform : {
+                                2 : function(value){
+                                    totalUnits = totalUnits + parseInt(value);  
+                                    return value;
+                                },
+                                3 : function(value){
+                                    totalAmount = totalAmount + parseFloat(value);
+                                    return app.formatMoney(value);
+                                },
+                                4 : function(value){
+                                    return value === "0" ? "<span style='color:green'>Stock Out</span>" : "<span style='color:red'>Stock In</span>";
+                                },
+                                7 : function(value){
+                                    return new Date(value).toLocaleString();
+                                }
+                            },
+                            onRender : function(id){
+                               //append amounts
+                               totalAmount = app.formatMoney(totalAmount);
+                               $("#"+id).append("<tr><td></td> <td></td> <td><b>Totals</b></td> <td><b>"+totalUnits+"</b></td> <td><b>"+totalAmount+"</b></td></tr>");
+                            }
+                        }); 
+
+                    }
+                });
+            }
+        });  
+    }
 };
 
 
@@ -988,9 +1044,8 @@ App.prototype.stockHistory = function () {
 App.prototype.reportHistory = function(options){
     var data = app.getFormData(app.context.stock_history);
     var id = $("#search_stock").attr("current-item");
-    id = !id ? "all" : id;
-    if (!data)
-        return;
+    id = $("#search_stock").val().trim() === ""  ? "all" : id;
+    if (!data) return;
     if (Date.parse(data.end_date.value) < Date.parse(data.start_date.value)) {
         app.showMessage(app.context.invalid_dates);
         return;
@@ -1000,7 +1055,8 @@ App.prototype.reportHistory = function(options){
         user_name: $("#stock_select_users").val(),
         begin_date: data.start_date.value,
         end_date: data.end_date.value,
-        report_type : data.report_type.value
+        report_type : data.report_type.value,
+        supplier_id : $("#stock_select_suppliers").val()
     };
     app.xhr(request, app.dominant_privilege,"stock_history", {
         load: true,

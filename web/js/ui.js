@@ -114,7 +114,7 @@ UI.prototype.table = function (options) {
 
 
     var id = "table_" + Math.floor(Math.random() * 1000000);
-    var table = $("<table class='table table-condensed' style=" + options.style + " id=" + id + ">");
+    var table = $("<table class='table table-condensed' id='" + id + "' style='" + options.style + "' >");
     var tr = $("<tr>");
     if (options.include_nums) {
         options.headers.unshift("No");
@@ -135,6 +135,7 @@ UI.prototype.table = function (options) {
         }
         for (var y = 0; y < options.values.length; y++) {
             var td = $("<td>");
+                        
             //here we do transformations
             if(options.transform){
                 if(options.transform[y]){
@@ -142,6 +143,8 @@ UI.prototype.table = function (options) {
                     options.values[y][x] = options.transform[y](options.values[y][x],x);
                 }
             }
+            
+            
             if (typeof options.values[y][x] === "string") {
                 //do any summarizing here
                  if(options.summarize && options.summarize.cols.indexOf(y) > -1) {
@@ -161,5 +164,6 @@ UI.prototype.table = function (options) {
         table.append(tr);
     }
     $("#" + options.id_to_append).append(table);
+    if(options.onRender) options.onRender(id); //say that the table has finished rendering
     return id;
 };

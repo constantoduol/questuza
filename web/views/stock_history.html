@@ -12,12 +12,21 @@
             <option value="stock_history">Stock</option>
             <option value="commission_history">Commission</option>
             <option value="tax_history">Tax</option>
+            <option value="supplier_history">Supplier</option>
         </select>
 
         <label for="start_date">Email Address</label>
         <select id="stock_select_users">
             <option value="all">All</option>
         </select>
+        
+        <div id="stock_select_suppliers_div" style="display: none">
+        <label for='stock_select_suppliers'>Suppliers</label>
+        <select id='stock_select_suppliers'>
+            <option value='all'>All</option>
+        </select>
+        </div>
+        
         <label for="start_date">Start Date</label>
         <input type="date" class="form-control" id="start_date" placeholder="Start Date" readonly="readonly">
 

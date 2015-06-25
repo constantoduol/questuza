@@ -293,6 +293,17 @@ AppData.prototype.formData = {
             $("#search_link").click(function () {
                 app.allProducts(app.pages.stock_history);
             });
+            
+            $("#report_type").change(function(){
+               var report = $("#report_type").val();
+               if(report === "supplier_history"){
+                  $("#stock_select_suppliers_div").css("display","block"); 
+               }
+               else {
+                  $("#stock_select_suppliers_div").css("display","none");   
+               }
+            });
+            
             app.setUpDate("start_date"); //no limit
             app.setUpDate("end_date"); //no limit
             app.setUpAuto(app.context.stock_history.fields.search_stock);
@@ -302,19 +313,23 @@ AppData.prototype.formData = {
                 $("#stock_expiry_btn").remove();
             }
             //load all users
-            app.xhr({}, app.dominant_privilege, "all_users", {
+            app.xhr({}, "pos_admin_service,pos_admin_service", "all_users,all_suppliers", {
                 load: false,
                 success: function (data) {
-                    var resp = data.response.data;
+                    var userResp = data.response.pos_admin_service_all_users.data;
+                    var supResp = data.response.pos_admin_service_all_suppliers.data;
                     $("#stock_select_users").html("<option value='all'>All</option>");
-                    $.each(resp.USER_NAME, function (index) {
-                        var name = resp.USER_NAME[index];
+                    $.each(userResp.USER_NAME, function (index) {
+                        var name = userResp.USER_NAME[index];
                         $("#stock_select_users").append($("<option value=" + name + ">" + name + "</option>"));
                     });
-                },
-                error: function () {
-                    //do something 
-                    app.showMessage(app.context.error_message);
+                    
+                    $("#stock_select_suppliers").html("<option value='all'>All</option>");
+                    $.each(supResp.SUPPLIER_NAME, function (index) {
+                        var name = supResp.SUPPLIER_NAME[index];
+                        var id = supResp.ID[index];
+                        $("#stock_select_suppliers").append($("<option value=" + id + ">" + name + "</option>"));
+                    });
                 }
             });
         }
@@ -407,7 +422,7 @@ AppData.prototype.formData = {
                         }
                     }}
             },
-            help_url : "/help/sale.html",
+            help_url : "/help/sale.html"
         },
         error_space: "error_space_sale",
         load_area: "error_space_sale",
@@ -732,6 +747,7 @@ AppData.prototype.formData = {
         business_create_confirm: "Create a new Business ?",
         business_delete_confirm: "Delete business? You will lose all records for this business",
         business_deleted_success: "Business deleted successfully",
-        resource_success: "{resource_type} was added successfully"
+        resource_success: "{resource_type} was added successfully",
+        supplier_transact : "Transaction was successful"
     }
 };

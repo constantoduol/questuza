@@ -121,7 +121,7 @@ App.prototype.getFormData = function (formData) {
         }
         if(sign === "+" && parseFloat(value) < 0){
             elem.focus();
-            errorSpace.html(formData[id].message);
+            errorSpace.html("Field should have positive value");
             app.scrollTo(id);
             return; 
         }

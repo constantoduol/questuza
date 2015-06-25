@@ -18,6 +18,7 @@ import com.quest.access.useraccess.services.annotations.Models;
 import com.quest.access.useraccess.services.annotations.WebService;
 import com.quest.access.useraccess.verification.UserAction;
 import com.quest.servlets.ClientWorker;
+import java.util.ArrayList;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -123,14 +124,7 @@ import java.util.logging.Logger;
                         "TRAN_TYPE BOOL",
                         "UNITS INT",
                         "NARRATION TEXT",
-                        "ACTION_ID VARCHAR(60)",
-                        "CREATED DATETIME"
-                }),
-        @Model(
-                database = "pos_data", table = "ACTIVATION_DATA",
-                columns = {
-                        "ACTIVATION_KEY VARCHAR(25)",
-                        "BUSINESS_NAME TEXT",
+                        "USER_NAME TEXT",
                         "CREATED DATETIME"
                 }),
          @Model(
@@ -170,7 +164,7 @@ public class PosAdminService implements Serviceable {
     
     private void validateActivation(Server serv){
         try {
-            Database db = new Database(POS_DATA, null);
+            Database db = new Database("user_server", null);
             JSONObject data = db.query("SELECT * FROM ACTIVATION_DATA");
             String key = data.optJSONArray("ACTIVATION_KEY").optString(0);
             String name = data.optJSONArray("BUSINESS_NAME").optString(0);
@@ -182,6 +176,7 @@ public class PosAdminService implements Serviceable {
             worker.setPropagateResponse(false);
             ac.validateKey(serv, worker);
             Object response = worker.getResponseData();
+            io.log(response, Level.SEVERE, this.getClass());
             if (response.equals("fail")) {
                 isAccessible = false;
             } else {
@@ -296,11 +291,11 @@ public class PosAdminService implements Serviceable {
                 if (storedProductQty > newProductQty) {
                     //reduction in stock
                     Integer theQty = storedProductQty - newProductQty;
-                    addStock(prodId, busId, theQty.toString(), productBp, productSp, 0, productNarr, "old_stock_disposed", bType, db, userName);
+                    addStock(prodId, busId, theQty.toString(), productBp, productSp, 0, productNarr, "stock_out", bType, db, userName);
                 } else if (newProductQty > storedProductQty) {
                     //increase in stock
                     Integer theQty = newProductQty - storedProductQty;
-                    addStock(prodId, busId, theQty.toString(), productBp, productSp, 1, productNarr, "new_stock", bType, db, userName);
+                    addStock(prodId, busId, theQty.toString(), productBp, productSp, 1, productNarr, "stock_in", bType, db, userName);
                 }
                 action.saveAction();
                 worker.setResponseData("SUCCESS");
@@ -416,7 +411,7 @@ public class PosAdminService implements Serviceable {
          }
          String tranFlag = entryType.equals("1") ? "stock_in" : "stock_out";
         //stuff from suppliers, credit your account, debit suppliers account
-         db.doInsert("SUPPLIER_ACCOUNT",new String[]{supId,busId,prodId,transAmount,entryType,units,narr,actionId,"!NOW()"});
+         db.doInsert("SUPPLIER_ACCOUNT",new String[]{supId,busId,prodId,transAmount,entryType,units,narr,userName,"!NOW()"});
          db.execute("UPDATE PRODUCT_DATA SET PRODUCT_QTY='" + newQty + "' WHERE ID='" + prodId + "' AND BUSINESS_ID='"+busId+"'");
          //note this as a stock movement
          db.doInsert("STOCK_DATA", new String[]{busId, prodId,entryType,transAmount, cost.toString(), units, "0",tranFlag, narr, "!NOW()",userName});
@@ -648,8 +643,34 @@ public class PosAdminService implements Serviceable {
             taxHistory(serv,worker);
         }
         else if(action.equals("supplier_history")){
-
+            supplierHistory(serv, worker);
         }
+    }
+    
+    private void supplierHistory(Server serv,ClientWorker worker){
+        Database db = new Database(POS_DATA, worker.getSession());
+        JSONObject requestData = worker.getRequestData();
+        String beginDate = requestData.optString("begin_date") + " 00:00:00";
+        String endDate = requestData.optString("end_date") + " 23:59:59";
+        String prodId = requestData.optString("id");
+        String userName = requestData.optString("user_name");
+        String busId = requestData.optString("business_id");
+        String supId = requestData.optString("supplier_id");
+        
+        String extraSql = userName.equals("all") ? "" : " AND SUPPLIER_ACCOUNT.USER_NAME = '" + userName + "'";
+        String extraSql1 = supId.equals("all") ? "" : " AND SUPPLIER_ACCOUNT.SUPPLIER_ID = '" + supId + "'";
+        String extraSql2 = prodId.equals("all") ? "" : " AND SUPPLIER_ACCOUNT.PRODUCT_ID = '" + prodId + "'";
+        
+        String sql = "SELECT SUPPLIER_NAME, PRODUCT_NAME,TRANS_AMOUNT,TRAN_TYPE,UNITS,NARRATION,SUPPLIER_ACCOUNT.USER_NAME,"
+                + " SUPPLIER_ACCOUNT.CREATED FROM SUPPLIER_DATA, PRODUCT_DATA, SUPPLIER_ACCOUNT WHERE "
+                + " SUPPLIER_ACCOUNT.CREATED >= ? AND SUPPLIER_ACCOUNT.CREATED <= ? AND SUPPLIER_ACCOUNT.PRODUCT_ID = PRODUCT_DATA.ID"
+                + " AND SUPPLIER_ACCOUNT.SUPPLIER_ID = SUPPLIER_DATA.ID AND SUPPLIER_ACCOUNT.BUSINESS_ID = ? ";
+        sql = sql + extraSql + extraSql1 + extraSql2;
+     
+        JSONObject data = db.query(sql, beginDate,endDate,busId);
+        worker.setResponseData(data);
+        serv.messageToClient(worker);
+        
     }
 
     private void commissionHistory(Server serv,ClientWorker worker){
