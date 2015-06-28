@@ -361,7 +361,8 @@ App.prototype.profitAndLoss = function () {
         return;
     var request = {
         start_date: data.start_date.value,
-        end_date: data.end_date.value
+        end_date: data.end_date.value,
+        business_type : localStorage.getItem("business_type")
     };
     app.xhr(request, app.dominant_privilege, "profit_and_loss", {
         load: true,
@@ -576,7 +577,8 @@ App.prototype.supplierAccount = function(prodId,supId,name){
                 units_received : data.units_received.value,
                 sp_per_unit : data.sp_per_unit.value,
                 supplier_id : supId,
-                product_id : prodId
+                product_id : prodId,
+                business_type : localStorage.getItem("business_type")
             };
             app.xhr(request,app.dominant_privilege,"supplier_account_transact",{
                 load : true,
@@ -597,6 +599,14 @@ App.prototype.supplierAccount = function(prodId,supId,name){
         load_area: "modal_content_area",
         onload : function(){
             $("#supplier_account_name").html(name);
+            if(localStorage.getItem("business_type") === "services"){
+                $("#units_received").val("0");
+                $("#sp_per_unit").val("0");
+                $("#units_received").css("display","none");
+                $("#sp_per_unit").css("display","none");
+                $("#units_received_lbl").css("display","none");
+                $("#sp_per_unit_lbl").css("display","none");
+            }
         }
     });
 };
@@ -734,22 +744,31 @@ App.prototype.goodsStockHistory = function () {
                     var undos = [];
                     $.each(resp.TRAN_TYPE, function (index) {
                         var type = resp.TRAN_TYPE[index];
-                        var color = type === "0" ? "red" : "green";
+                        var flag = resp.TRAN_FLAG[index];
+                        var color;
+                        if(flag === "sale_to_customer"){
+                            color = "red";
+                        }
+                        else if(flag === "stock_in"){
+                            color = "green";
+                        }
+                        else if(flag === "stock_out"){
+                            color = "orange";
+                        }
 
                         var qty = type === "1" ? parseInt(resp.STOCK_QTY[index]) : -parseInt(resp.STOCK_QTY[index]);
                         var amountSP = type === "1" ? parseFloat(resp.STOCK_COST_SP[index]) : -parseFloat(resp.STOCK_COST_SP[index]);
                         var amountBP = type === "1" ? parseFloat(resp.STOCK_COST_BP[index]) : -parseFloat(resp.STOCK_COST_BP[index]);
                         var profit = parseFloat(resp.PROFIT[index]);
 
-                        color = amountSP < 0 && profit === 0 ? "orange" : color;
-
+                       
                         var span = type === "0" ? "Stock Decrease" : "Stock Increase";
                         resp.TRAN_TYPE[index] = "<span style='color : " + color + "'>" + span + "<span>";
 
                         var undo = "<a href='#' onclick='app.undoSale(\"" + resp.PRODUCT_ID[index] + "\",\"" + resp.STOCK_QTY[index] + "\")' \n\
                                     title='Undo sale'>Undo Sale</a>";
 
-                        type === "0" && profit > 0 ? undos.push(undo) : undos.push("");
+                        flag === "sale_to_customer" ? undos.push(undo) : undos.push("");
 
                         var time = new Date(resp.CREATED[index]).toLocaleString();
                         resp.CREATED[index] = time;
@@ -785,7 +804,7 @@ App.prototype.goodsStockHistory = function () {
                         }
                     });
                     var summary = $("<table class='summary table'><tr>"+
-                                    "<tr><th>Cost Of Sales BP</th><th>Cost Of Sales SP</th><th>Profit</th></tr>"+
+                                    "<tr><th>Cost Of Goods</th><th>Cost Of Sales</th><th>Profit</th></tr>"+
                                     "<tr><td>"+app.formatMoney(costOfGoods) + "</td>"+
                                     "<td>" + app.formatMoney(costOfSales) + "</td>"+
                                     "<td>" + app.formatMoney(profits) + "</td></tr></table>");
@@ -828,25 +847,32 @@ App.prototype.servicesStockHistory = function () {
                 onload: function () {
                     var totalQty = 0;
                     var totalSP = 0;
-                    var totalBP = 0;
                     var costOfSales = 0;
                     var undos = [];
                     $.each(resp.TRAN_TYPE, function (index) {
                         var type = resp.TRAN_TYPE[index];
-                        var color = type === "0" ? "red" : "green";
+                        var flag = resp.TRAN_FLAG[index];
+                        var color;
+                        if(flag === "sale_to_customer"){
+                            color = "red";
+                        }
+                        else if(flag === "stock_in"){
+                            color = "green";
+                        }
+                        else if(flag === "stock_out"){
+                            color = "orange";
+                        }
 
                         var qty = type === "1" ? parseInt(resp.STOCK_QTY[index]) : -parseInt(resp.STOCK_QTY[index]);
                         var amountSP = type === "1" ? parseFloat(resp.STOCK_COST_SP[index]) : -parseFloat(resp.STOCK_COST_SP[index]);
-                        var amountBP = type === "1" ? parseFloat(resp.STOCK_COST_BP[index]) : -parseFloat(resp.STOCK_COST_BP[index]);
-
-
-                        var span = type === "0" ? "Sale to Customer" : "Return of Sale";
+                       
+                        var span = type === "0" ? "Stock Decrease" : "Stock Increase";
                         resp.TRAN_TYPE[index] = "<span style='color : " + color + "'>" + span + "<span>";
 
                         var undo = "<a href='#' onclick='app.undoSale(\"" + resp.PRODUCT_ID[index] + "\",\"" + resp.STOCK_QTY[index] + "\")' \n\
                                     title='Undo sale'>Undo Sale</a>";
 
-                        undos.push(undo);
+                        type === "0" ? undos.push(undo) : undos.push("");
 
                         var time = new Date(resp.CREATED[index]).toLocaleString();
                         resp.CREATED[index] = time;
@@ -856,9 +882,8 @@ App.prototype.servicesStockHistory = function () {
 
                         totalQty = totalQty + qty;
                         totalSP = totalSP + amountSP;
-                        totalBP = totalBP + amountBP;
-
-                        costOfSales = costOfSales - amountSP;
+                       
+                        flag === "sale_to_customer" ? costOfSales = costOfSales - amountSP : 0;
                     });
 
                     resp.STOCK_COST_SP.push("<b>" + app.formatMoney(totalSP) + "</b>");
@@ -875,7 +900,7 @@ App.prototype.servicesStockHistory = function () {
                         mobile_collapse : true,
                         summarize : {
                             cols : [4],
-                            lengths : [30],
+                            lengths : [30]
                         }
                     });
                     var summary = $("<div class='summary'><span>Cost Of Sales: " + app.formatMoney(costOfSales) + "</span></div>");

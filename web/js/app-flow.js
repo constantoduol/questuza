@@ -121,6 +121,26 @@ AppData.prototype.formData = {
             $("#stock_low_btn").click(function () {
                 app.stockLow(app.pages.sale);
             });
+            
+            //bind shortcuts for the sales person
+            $(document).bind('keydown', 'Shift+return', function(){
+                app.commitSale();
+            });
+            $(document).bind('keyup', 'Shift+c', function(){
+                app.clearSale();
+            });
+             $(document).bind('keyup', 'Shift+f', function(){
+                $("#search_products").val("");
+                $("#search_products").focus();
+             });
+              $("#commit_sale_btn").bind('keyup', 'Shift+f', function(){
+                $("#search_products").val("");
+                $("#search_products").focus();
+             });
+              $("#commit_sale_btn").bind('keyup', 'Shift+c', function(){
+                  app.clearSale();
+             });
+            
             //$("#logout_link").click(app.logout);
             var bType = app.appData.formData.login.current_user.business_type;
             if (bType === "services") {
@@ -416,9 +436,8 @@ AppData.prototype.formData = {
                         selected: [],
                         after: function (data, index) {
                             app.sale(data, index);
-                            app.runLater(200, function () {
-                                $("#search_products").val("");  //clear the search box
-                            });
+                            $("#commit_sale_btn").focus(); 
+                            
                         }
                     }}
             },
@@ -696,7 +715,7 @@ AppData.prototype.formData = {
                 expense_name: {required: true, message: "Expense/Income name is required"},
                 expense_amount: {required: true, message: "Expense/Income amount is required", sign : "+"}
             },
-            help_url : "/help/expense.html"
+            help_url : "/help/expenses.html"
         },
         profit_and_loss: {
             fields: {

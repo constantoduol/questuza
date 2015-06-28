@@ -19,6 +19,7 @@ and open the template in the editor.
         <script type="text/javascript" src="js/bootstrap.min.js"></script>
         <script type="text/javascript" src="js/bootstrap3-typeahead.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.js"></script>
+        <script type="text/javascript" src="js/jquery.hotkeys.js"></script>
         <script type="text/javascript" src="js/ui.js"></script>
         <script type="text/javascript" src="js/app-flow.js"></script>
         <script type="text/javascript" src="js/app.js"></script>
@@ -27,18 +28,19 @@ and open the template in the editor.
         <script type="text/javascript" src="js/util.js"></script>
         <script type="text/javascript" src="js/printThis.js"></script>
          <script type="text/javascript" src="js/account.js"></script>
+       
       
     </head>
     <body>
-        <div id="content_area">
-          <div class="card">
+        <div id="content_area" style='margin-top: 20px'>
+          <div class="card" >
             <div class="sigin">
                 <a href="#" id="logout_link">Sign out</a> 
             </div>
             <h3>Sale</h3>
             <div class="input-group">
                 <input type="text" class="form-control" id="search_products" placeholder="Search Products">
-                <div class="input-group-addon" id="search_link"><img src="img/search.png" alt="Search"></div>
+                <div class="input-group-addon search" id="search_link"><img src="img/search.png" alt="Search"></div>
             </div>
             <div id="error_space_sale" class="error" ></div>
               <div id="sale_area"></div>
