@@ -43,6 +43,7 @@ AppData.prototype.formData = {
             app.pages.supplier_select = "/views/supplier_select.html";
             app.pages.supplier_account = "/views/supplier_account.html";
             app.pages.settings = "/views/settings.html";
+            app.pages.keypad = "/views/keypad.html";
 
             //setup the dominant privilege
             app.dominant_privilege = app.appData.formData.login.current_user.dominantPrivilege();
@@ -59,6 +60,7 @@ AppData.prototype.formData = {
             if (user && user.length > 13) {
                 shortUser = user.substring(0, 13) + "..."; //no overlong usernames
             }
+            
             //setup account details
             var logoutLink = $("#logout_link");
             logoutLink.html(shortUser + "(account)");
@@ -92,12 +94,17 @@ AppData.prototype.formData = {
                                 }
                             });
                         });
+                        
                         $("#change_password_link").click(function(){
                             window.location = "/change.html?user_name="+user;
                         });
+                   
                     }
                 });
             });
+        },
+        "/index_touch.html" : function(){
+            app.keyPad("keypad","password");
         },
         "/views/paginate.html": function () {
             //dont show a print button on mobile
@@ -123,7 +130,7 @@ AppData.prototype.formData = {
             });
             
             //bind shortcuts for the sales person
-            $(document).bind('keydown', 'Shift+return', function(){
+            $(document).bind('keyup', 'Shift+return', function(){
                 app.commitSale();
             });
             $(document).bind('keyup', 'Shift+c', function(){

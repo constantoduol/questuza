@@ -200,7 +200,7 @@ select {
 }
 
 form {
-    max-width: 400px;
+    max-width: 500px;
     border : 1px solid lightblue;
     margin : auto;
     margin-top : 20px;
@@ -261,4 +261,23 @@ form {
 
 #ui-datepicker-div {
     z-index : 10000 !important;
+}
+
+
+.keypad {
+    
+}
+
+.key {
+  padding: 15px;
+  border: 1px solid lightblue;
+  width: 150px;
+  text-align: center;
+  font-size: 40px;
+  cursor: pointer;
+}
+
+.key:hover {
+    background: lightblue;
+    color : white;
 }

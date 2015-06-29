@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+    <title>Login</title>
+    <link rel='shortcut icon' type='image/x-icon' href='img/favicon.png' />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="description" content="quest pico" />   
+    <link href='css/bootstrap.min.css' rel='stylesheet' type='text/css'>
+    <link href='css/bootstrap-theme.min.css' rel='stylesheet' type='text/css'>
+    <link href='css/pos.css' rel='stylesheet' type='text/css'>
+    <script type="text/javascript" src="js/jquery-1.11.2.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/ui.js"></script>
+    <script type="text/javascript" src="js/app-flow.js"></script>
+    <script type="text/javascript" src="js/app.js"></script>
+    <script type="text/javascript" src="js/util.js"></script>
+    <script type="text/javascript" src="js/account.js"></script>
+    </head>
+    <body>
+        <form onsubmit="app.login();return false;" style="margin-top: 5px">
+            <h3>PIN</h3>
+            <div class="form-group">
+                <input type="text" class="form-control" id="password" placeholder="PIN">
+                <div id="error_space_login" class="error" ></div>
+            </div>
+            <div id="keypad">
+            </div>
+            <br>
+            <button type="submit" class="btn" style="width : 450px; height: 80px; font-size: 40px">Sign in</button>
+
+            <div id="logo_cont">
+                <img src="img/quest-pico.png" alt="logo">
+            </div>
+        </form>
+        
+    </body>
+</html>

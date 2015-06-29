@@ -95,7 +95,7 @@
         </init-param>
         <init-param>
             <param-name>offline-database-password</param-name>
-             <param-value>pasnipop</param-value>
+             <param-value>@7enterprise#123</param-value>
         </init-param>
          <init-param>
             <param-name>offline-jdbc</param-name>
