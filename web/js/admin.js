@@ -57,7 +57,7 @@ App.prototype.settings = function () {
                 load_area: "paginate_body",
                 onload: function () {
                     $("#paginate_print").remove();
-                    app.xhr({}, app.dominant_privilege, "fetch_settings", {
+                    app.xhr({}, "open_data_service", "fetch_settings", {
                         load: false,
                         success: function (resp) {
                             var r = resp.response.data;
@@ -75,9 +75,10 @@ App.prototype.settings = function () {
                             add_tax : data.add_tax.value,
                             add_comm : data.add_comm.value,
                             add_purchases : data.add_purchases.value,
-                            track_stock : data.track_stock.value
+                            track_stock : data.track_stock.value,
+                            user_interface : data.user_interface.value
                         };
-                        app.xhr(request,app.dominant_privilege,"save_settings",{
+                        app.xhr(request,"open_data_service","save_settings",{
                             load : false,
                             success : function(resp){
                                 var r = resp.response.data;
@@ -225,26 +226,28 @@ App.prototype.createUser = function () {
         return;
     var role = data.user_role.value;
     var priv = role === "admin" ? ["pos_admin_service", "user_service"] : ["pos_sale_service"];
-    var reg = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/
-    var emailValid = reg.test(data.email_address.value);
-    if (!emailValid) {
-        app.showMessage(app.context.email_invalid);
-        $("#email_address").focus();
-        return;
-    }
+    var pin = Math.floor(Math.random()*100000);
+    var interface = app.getSetting("user_interface");
+    var password = interface === "touch" ? pin : "";
     var requestData = {
         name: data.email_address.value,
         host: app.appData.formData.login.current_user.host,
         group: role,
         privs: priv,
-        real_name : data.real_name.value
+        real_name : data.real_name.value,
+        password : password
     };
     app.xhr(requestData, "open_data_service", "create_account", {
         load: true,
         success: function (data) {
             console.log(data);
             if (data.response.data === "success") {
-                app.showMessage(app.context.create_user);
+                if(interface === "touch"){
+                    alert("User created, PIN is : "+pin);
+                }
+                else {
+                    app.showMessage(app.context.create_user);
+                }
             }
             else if (data.response.type === "exception") {
                 app.showMessage(data.response.reason);
@@ -261,14 +264,21 @@ App.prototype.resetPassword = function () {
     var data = app.getFormData(app.context.user);
     if (!data)
         return;
+    var interface = app.getSetting("user_interface");
     var requestData = {
-        name: data.email_address.value
+        name: data.email_address.value,
+        user_interface : interface
     };
     app.xhr(requestData, "user_service", "reset_pass", {
         load: true,
         success: function (data) {
             if (data.response.data === "success") {
-                app.showMessage(app.context.reset_password);
+                if(interface === "touch"){
+                    alert("PIN reset successful, PIN is : "+data.response.reason);
+                }
+                else {
+                    app.showMessage(app.context.reset_password);
+                }
             }
             else if (data.response.data === "fail") {
                 app.showMessage(data.response.reason);
@@ -284,7 +294,6 @@ App.prototype.allUsers = function () {
     app.xhr({}, "user_service,pos_admin_service", "all_users,all_users", {
         load: true,
         success: function (data) {
-            console.log(data);
             var title = "All Users";
             var names = data.response.pos_admin_service_all_users.data.USER_NAME;
             var userData = data.response.user_service_all_users.data;
@@ -310,7 +319,7 @@ App.prototype.allUsers = function () {
                 title: title,
                 save_state: true,
                 save_state_area: "content_area",
-                onload_handler: "user.html",
+                onload_handler: app.pages.users,
                 onload: function () {
                      app.ui.table({
                         id_to_append : "paginate_body",
@@ -719,8 +728,8 @@ App.prototype.goodsStockHistory = function () {
     var request = {
         id: id,
         user_name: $("#stock_select_users").val(),
-        begin_date: data.start_date.value,
-        end_date: data.end_date.value,
+        begin_date: data.start_date.value+" "+$("#start_time").val(),
+        end_date: data.end_date.value+" "+$("#stop_time").val(),
         report_type : data.report_type.value
     };
     app.xhr(request, app.dominant_privilege, "stock_history", {
@@ -829,8 +838,8 @@ App.prototype.servicesStockHistory = function () {
     var request = {
         id: id,
         user_name: $("#stock_select_users").val(),
-        begin_date: data.start_date.value,
-        end_date: data.end_date.value,
+        begin_date: data.start_date.value+" "+$("#start_time").val(),
+        end_date: data.end_date.value+" "+$("#stop_time").val(),
         report_type : data.report_type.value
     };
     app.xhr(request, app.dominant_privilege, "stock_history", {
@@ -1078,8 +1087,8 @@ App.prototype.reportHistory = function(options){
     var request = {
         id: id,
         user_name: $("#stock_select_users").val(),
-        begin_date: data.start_date.value,
-        end_date: data.end_date.value,
+        begin_date: data.start_date.value+" "+$("#start_time").val(),
+        end_date: data.end_date.value+" "+$("#stop_time").val(),
         report_type : data.report_type.value,
         supplier_id : $("#stock_select_suppliers").val()
     };
@@ -1166,7 +1175,8 @@ App.prototype.createProduct = function () {
     var requestData = {
         product_name: data.product_name.value,
         product_quantity: data.product_quantity.value,
-        product_type: data.product_type.value,
+        product_category: data.product_category.value,
+        product_sub_category: data.product_sub_category.value,
         product_bp_unit_cost: data.product_bp_unit_cost.value,
         product_sp_unit_cost: data.product_sp_unit_cost.value,
         product_reminder_limit: data.product_reminder_limit.value,
@@ -1246,7 +1256,8 @@ App.prototype.updateProduct = function () {
             old_product_name: $("#product_name").attr("old-product-name"),
             product_name: data.product_name.value,
             product_quantity: data.product_quantity.value,
-            product_type: data.product_type.value,
+            product_category: data.product_category.value,
+            product_sub_category: data.product_sub_category.value,
             product_bp_unit_cost: data.product_bp_unit_cost.value,
             product_sp_unit_cost: data.product_sp_unit_cost.value,
             product_reminder_limit: data.product_reminder_limit.value,
@@ -1412,3 +1423,45 @@ App.prototype.undoSale = function (prodId, prodQty) {
         cancelText: "Cancel"
     });
 };
+
+
+App.prototype.addProductCategory = function(){
+   var cat = $("#product_categories").val();
+   var username = $("#email_address").val();
+   if(username === ""){
+       app.showMessage("Username is required");
+       return;
+   }
+   var request = {
+       category : cat,
+       username : username
+   };
+   app.xhr(request,app.dominant_privilege,"add_category",{
+       load : true,
+       success : function(resp){
+          var r = resp.response.data;
+          if(r === "success"){
+              app.showMessage("Category added successfully");
+          }
+          else if(r === "fail"){
+            app.showMessage(resp.response.reason);  
+          }
+       }
+   });
+};
+
+App.prototype.fetchProductCategory = function(){
+    var username = $("#email_address").val();
+    var request = {
+        username: username
+    };
+    app.xhr(request, app.dominant_privilege, "fetch_categories", {
+        load: false,
+        success: function (resp) {
+            var r = resp.response.data;
+            $("#product_categories_display").html(r.CATEGORY.toString());
+        }
+    }); 
+};
+
+//67407

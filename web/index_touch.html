@@ -24,8 +24,9 @@ and open the template in the editor.
     <body>
         <form onsubmit="app.login();return false;" style="margin-top: 5px">
             <h3>PIN</h3>
+            <input type="text" class="form-control" id="username" placeholder="Email Address" style="display:none">
             <div class="form-group">
-                <input type="text" class="form-control" id="password" placeholder="PIN">
+                <input type="password" class="form-control" id="password" placeholder="PIN" style="  height: 50px;font-size: 20px;">
                 <div id="error_space_login" class="error" ></div>
             </div>
             <div id="keypad">

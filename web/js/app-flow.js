@@ -38,6 +38,7 @@ AppData.prototype.formData = {
             app.pages.billing = "/views/billing.html";
             app.pages.pay_bill = "/views/pay_bill.html";
             app.pages.sale = "/sale.html";
+            app.pages.sale_touch = "/sale_touch.html";
             app.pages.account = "/views/account.html";
             app.pages.suppliers = "/views/suppliers.html";
             app.pages.supplier_select = "/views/supplier_select.html";
@@ -57,13 +58,16 @@ AppData.prototype.formData = {
             //always shorten the username
             var user = app.appData.formData.login.current_user.name;
             var shortUser;
-            if (user && user.length > 13) {
-                shortUser = user.substring(0, 13) + "..."; //no overlong usernames
+            if (user && user.length > 20) {
+                shortUser = user.substring(0, 20) + "..."; //no overlong usernames
+            }
+            else {
+               shortUser = user;
             }
             
             //setup account details
             var logoutLink = $("#logout_link");
-            logoutLink.html(shortUser + "(account)");
+            logoutLink.html(shortUser);
             logoutLink.unbind("click");
             logoutLink.click(function(){
                 var m = app.ui.modal("","User Account",{
@@ -103,13 +107,88 @@ AppData.prototype.formData = {
                 });
             });
         },
+        "/index.html" : function(){
+            app.context = app.appData.formData.login;
+            app.xhr({}, "open_data_service", "fetch_settings", {
+                load: false,
+                success: function (resp) {
+                    var r = resp.response.data;
+                    localStorage.setItem("settings", JSON.stringify(r));
+                    var userInterface = app.getSetting("user_interface");
+                    if(userInterface === "touch"){
+                        window.location = "index_touch.html";
+                    }
+                }
+            });
+        },
+        "/" : function(){
+            this["/index.html"]();
+        },
         "/index_touch.html" : function(){
             app.keyPad("keypad","password");
+            app.context = app.appData.formData.login_touch;
+            app.xhr({}, "open_data_service", "fetch_settings", {
+                load: false,
+                success: function (resp) {
+                    var r = resp.response.data;
+                    localStorage.setItem("settings", JSON.stringify(r));
+                     $("#password").val("");
+                }
+            });
         },
         "/views/paginate.html": function () {
             //dont show a print button on mobile
             if (app.platform === "mobile") {
                 $("#paginate_print").remove();
+            }
+        },
+        "/sale_touch.html" : function(){
+            app.context = app.appData.formData.sale_touch;
+            app.sub_context = app.appData.formData.sale_touch.product;
+            $("#product_display_area").html("");
+            $("#category_area").html("");
+            app.loadCategories("category_area","category");
+            $("#home_link").click(function(){
+               $("#category_area").html("");
+               $("#product_display_area").html("");
+               app.loadCategories("category_area","category"); 
+            });
+            
+             $("#clear_sale_link").click(function(){
+                 $("#category_area").html("");
+                $("#product_display_area").html("");
+                $("#current_sale_card").html("");
+                $("#commit_link").css("visibility", "hidden");
+                $("#total_qty").css("visibility", "hidden");
+                $("#total_amount").css("visibility", "hidden");
+                $("#clear_sale_link").css("visibility", "hidden");
+                $("#total_qty").html("0");
+                $("#total_amount").html("0.00");
+                app.loadCategories("category_area", "category"); 
+            });
+            
+            $("#commit_link").click(app.commitSale);
+            
+            $("#todays_sale_link").click(app.todaySales);
+            
+            
+            $("#logout_link").unbind("click");
+            $("#logout_link").click(app.logout);
+            
+            app.generateReceiptHeaders();
+            
+            if (app.platform === "web") {
+                if (!$("#receipt_area")[0]) {
+                    $("body").append("<iframe id='receipt_area' name='receipt_area' style='width:0px;height:0px'></iframe>");
+                    $("body").append("<div id='receipt_area_dummy' style='display:none'></div>");
+                    var cssLink = document.createElement("link")
+                    cssLink.href = "css/bootstrap.min.css";
+                    cssLink.rel = "stylesheet";
+                    cssLink.type = "text/css";
+                    app.runLater(2000, function () {
+                        window.frames['receipt_area'].document.getElementsByTagName("head")[0].appendChild(cssLink);
+                    });
+                }
             }
         },
         "/sale.html": function () {
@@ -203,8 +282,20 @@ AppData.prototype.formData = {
                 app.generalUserRequest("enable_user");
             });
             $("#reset_user_btn").click(app.resetPassword);
+            $("#add_category_btn").click(app.addProductCategory);
             $("#search_link").click(app.allUsers);
             app.setUpAuto(app.context.user.fields.search_users);
+            app.xhr({category_type : "category"},app.dominant_privilege,"product_categories",{
+                load : false,
+                success : function(resp){
+                    var r = resp.response.data.PRODUCT_CATEGORY;
+                    $.each(r, function (index) {
+                        var cat = r[index];
+                        $("#product_categories").append($("<option value=" + cat + ">" + cat + "</option>"));
+                    }); 
+                }
+            });
+          
         },
         "/views/product.html": function () {
             app.sub_context = app.context.product;
@@ -216,7 +307,8 @@ AppData.prototype.formData = {
                 app.allProducts(app.pages.products);
             });
             app.setUpAuto(app.context.product.fields.search_products);
-            app.setUpAuto(app.context.product.fields.product_type);
+            app.setUpAuto(app.context.product.fields.product_category);
+            app.setUpAuto(app.context.product.fields.product_sub_category);
             app.setUpDate("product_expiry_date", true); //has limit
         },
         "/views/service_product.html": function () {
@@ -229,7 +321,8 @@ AppData.prototype.formData = {
                 app.allProducts(app.pages.products);
             });
             app.setUpAuto(app.context.product.fields.search_products);
-            app.setUpAuto(app.context.product.fields.product_type);
+            app.setUpAuto(app.context.product.fields.product_category);
+            app.setUpAuto(app.context.product.fields.product_sub_category);
             if(localStorage.getItem("track_stock") === "0" ){
                 $("#product_quantity").remove();
                 $("#product_quantity_label").remove();
@@ -339,6 +432,12 @@ AppData.prototype.formData = {
                 $("#stock_low_btn").remove();
                 $("#stock_expiry_btn").remove();
             }
+            
+            $.each(app.times, function (index) {
+                var time = app.times[index];
+                $("#start_time").append($("<option value=" + time + ">" + time + "</option>"));
+                $("#stop_time").append($("<option value=" + time + ">" + time + "</option>"));
+            });
             //load all users
             app.xhr({}, "pos_admin_service,pos_admin_service", "all_users,all_suppliers", {
                 load: false,
@@ -392,6 +491,37 @@ AppData.prototype.formData = {
             disabled: "User account has been disabled"
         }
     },
+    login_touch : {
+        fields: {
+            password: {required: true, message: "PIN is required"},
+            username: {required: false}//dLhkCJaBox2jIDpJKfHzsIxV1SGiNqWNh+ZWDtYrZDBgaweQQExDLcn66d0mExrECCtwnzT+l/fky7OR2Qr6iw==
+        },
+        error_space: "error_space_login",
+        load_area: "error_space_login",
+        error_message: "Server is unavailable! No connection.",
+        businesss_required: "Both email and business name are required!",
+        password_reset_success: "An email has been sent to your address, use it to reset your password",
+        current_user: {
+            name: localStorage.getItem("current_user"),
+            host: localStorage.getItem("host"),
+            business_id: localStorage.getItem("business_id"),
+            business_type: localStorage.getItem("business_type"),
+            dominantPrivilege: function () {
+                var privs = localStorage.getItem("privileges");
+                if (privs && privs.indexOf("pos_admin_service") > -1) {
+                    return "pos_admin_service";
+                }
+                else if (privs && privs.indexOf("pos_sale_service") > -1) {
+                    return "pos_sale_service";
+                }
+            }
+        },
+        messages: {
+            invalidpass: "The password you entered is invalid",
+            notexist: "User account does not exist",
+            disabled: "User account has been disabled"
+        }
+    },
     create_account: {
         fields: {
             user_name: {required: true, message: "Email address is required"},
@@ -422,6 +552,24 @@ AppData.prototype.formData = {
         messages: {
             false: "The old password entered is invalid"
         }
+    },
+    sale_touch: {
+        product: {
+            fields: {
+                
+            },
+            help_url : "/help/sale.html"
+        },
+        error_space: "error_space_sale",
+        load_area: "error_space_sale",
+        error_message: "Well,it seems the server is unavailable",
+        commit_sale: "Do you wish to commit transaction?",
+        invalid_qty: "An invalid quantity has been specified for this item",
+        insufficient_stock: "There is not sufficient stock to proceed with the sale",
+        no_product_selected: "No products have been selected for sale",
+        transact_fail: "Transaction failed",
+        transact_success: "Transaction was successful",
+        reverse_success: "Transaction reversed successfully"
     },
     sale: {
         product: {
@@ -494,12 +642,9 @@ AppData.prototype.formData = {
                                     else {
                                         $("#user_role").val("seller");
                                     }
-                                },
-                                error: function () {
-                                    //do something fun
-                                    app.showMessage(app.context.error_message);
                                 }
                             });
+                            app.fetchProductCategory();
                         }
                     }
                 },
@@ -532,7 +677,8 @@ AppData.prototype.formData = {
                     },
                     autocomplete_handler: {
                         product_name: "PRODUCT_NAME",
-                        product_type: "PRODUCT_TYPE",
+                        product_category: "PRODUCT_CATEGORY",
+                        product_sub_category: "PRODUCT_SUB_CATEGORY",
                         product_sp_unit_cost: "SP_UNIT_COST",
                         product_narration: "PRODUCT_NARRATION",
                         tax : "TAX",
@@ -541,20 +687,37 @@ AppData.prototype.formData = {
                 },
                 product_quantity: {required: false, sign : "+"},
                 product_name: {required: true, message: "Product name is required"},
-                product_type: {
+                product_category: {
                     required: false,
                     autocomplete: {
-                        id: "product_type",
+                        id: "product_category",
                         database: "pos_data",
                         table: "PRODUCT_DATA",
-                        column: "PRODUCT_TYPE",
+                        column: "PRODUCT_CATEGORY",
                         where: function () {
                             var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_TYPE  LIKE '" + $("#product_type").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_CATEGORY  LIKE '" + $("#product_category").val() + "%' AND BUSINESS_ID = '" + id + "'";
                         },
-                        orderby: "PRODUCT_TYPE ASC",
+                        orderby: "PRODUCT_CATEGORY ASC",
                         limit: 10,
-                        key: "PRODUCT_TYPE",
+                        key: "PRODUCT_CATEGORY",
+                        data: {}
+                    }
+                },
+                product_sub_category: {
+                    required: false,
+                    autocomplete: {
+                        id: "product_sub_category",
+                        database: "pos_data",
+                        table: "PRODUCT_DATA",
+                        column: "PRODUCT_SUB_CATEGORY",
+                        where: function () {
+                            var id = app.appData.formData.login.current_user.business_id;
+                            return "PRODUCT_SUB_CATEGORY  LIKE '" + $("#product_sub_category").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                        },
+                        orderby: "PRODUCT_SUB_CATEGORY ASC",
+                        limit: 10,
+                        key: "PRODUCT_SUB_CATEGORY",
                         data: {}
                     }
                 },
@@ -589,7 +752,8 @@ AppData.prototype.formData = {
                     autocomplete_handler: {
                         product_name: "PRODUCT_NAME",
                         product_quantity: "PRODUCT_QTY",
-                        product_type: "PRODUCT_TYPE",
+                         product_category: "PRODUCT_CATEGORY",
+                        product_sub_category: "PRODUCT_SUB_CATEGORY",
                         product_bp_unit_cost: "BP_UNIT_COST",
                         product_sp_unit_cost: "SP_UNIT_COST",
                         product_reminder_limit: "PRODUCT_REMIND_LIMIT",
@@ -601,20 +765,37 @@ AppData.prototype.formData = {
                 },
                 product_name: {required: true, message: "Product name is required"},
                 product_quantity: {required: true, message: "Product quantity is required", sign : "+"},
-                product_type: {
+                product_category: {
                     required: false,
                     autocomplete: {
-                        id: "product_type",
+                        id: "product_category",
                         database: "pos_data",
                         table: "PRODUCT_DATA",
-                        column: "PRODUCT_TYPE",
+                        column: "PRODUCT_CATEGORY",
                         where: function () {
                             var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_TYPE  LIKE '" + $("#product_type").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_CATEGORY  LIKE '" + $("#product_category").val() + "%' AND BUSINESS_ID = '" + id + "'";
                         },
-                        orderby: "PRODUCT_TYPE ASC",
+                        orderby: "PRODUCT_CATEGORY ASC",
                         limit: 10,
-                        key: "PRODUCT_TYPE",
+                        key: "PRODUCT_CATEGORY",
+                        data: {}
+                    }
+                },
+                product_sub_category: {
+                    required: false,
+                    autocomplete: {
+                        id: "product_sub_category",
+                        database: "pos_data",
+                        table: "PRODUCT_DATA",
+                        column: "PRODUCT_SUB_CATEGORY",
+                        where: function () {
+                            var id = app.appData.formData.login.current_user.business_id;
+                            return "PRODUCT_SUB_CATEGORY  LIKE '" + $("#product_sub_category").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                        },
+                        orderby: "PRODUCT_SUB_CATEGORY ASC",
+                        limit: 10,
+                        key: "PRODUCT_SUB_CATEGORY",
                         data: {}
                     }
                 },
@@ -688,7 +869,8 @@ AppData.prototype.formData = {
                 add_tax : {required : true},
                 add_comm : {required : true},
                 add_purchases : {required : true},
-                track_stock : {required : true}
+                track_stock : {required : true},
+                user_interface : {required : false}
             }
         },
         stock_history: {

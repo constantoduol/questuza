@@ -7,8 +7,8 @@
     <div id="error_space_admin" class="error" ></div>
     <hr/>
     <div class="form-group">
-        <label for="email_address">Email Address</label>
-        <input type="text" class="form-control" id="email_address" placeholder="Email Address">
+        <label for="email_address">Username</label>
+        <input type="text" class="form-control" id="email_address" placeholder="Username">
          <label for="real_name">Name</label>
         <input type="text" class="form-control" id="real_name" placeholder="Name">
         <label for="user_role">Role</label>
@@ -16,7 +16,11 @@
             <option value="seller">Seller</option>
             <option value="admin">Admin</option>
         </select>
-
+         <label for="product_categories">Product Categories</label>
+        <select id="product_categories">
+            <option value="all">All</option>
+        </select>
+         <div id="product_categories_display"></div>
     </div>
     <div class="input-group button_area">
         <input type="button" id="create_user_btn" value="Create User" class="btn"/>
@@ -25,6 +29,7 @@
         <input type="button" id="disable_user_btn" value="Disable User" class="btn"/>
         <input type="button" id="delete_user_btn" value="Delete User" class="btn"/>
         <input type="button" id="reset_user_btn" value="Reset Password" class="btn"/>
+        <input type="button" id="add_category_btn" value="Add Category" class="btn"/>
     </div>
 
 </div>

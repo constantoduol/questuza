@@ -1,5 +1,5 @@
 App.prototype.formatMoney = function (num) {
-    num = parseFloat(num);
+    num = parseFloat(num.toString().replace(",",""));
     var p = num.toFixed(2).split(".");
     var chars = p[0].split("").reverse();
     var newstr = '';
@@ -54,4 +54,33 @@ App.prototype.keyPadType = function(keyVal,display){
   var preVal = $("#"+display).val();
   $("#"+display).val(preVal+keyVal);
   
+};
+
+App.prototype.getDim = function(){
+    var body = window.document.body;
+    var screenHeight;
+    var screenWidth;
+    if (window.innerHeight) {
+        screenHeight = window.innerHeight;
+        screenWidth = window.innerWidth;
+    }
+    else if (body.parentElement.clientHeight) {
+        screenHeight = body.parentElement.clientHeight;
+        screenWidth = body.parentElement.clientWidth;
+    }
+    else if (body && body.clientHeight) {
+        screenHeight = body.clientHeight;
+        screenWidth = body.clientWidth;
+    }
+    return [screenWidth, screenHeight];   
+};
+
+App.prototype.getDate = function(){
+	var d = new Date();
+	var m = d.getMonth() + 1;
+	var day = d.getDate();
+	m = m < 10 ? "0"+m : m;
+	day = day < 10 ? "0"+day : day;
+	var y = d.getFullYear();
+	return y+"-"+m+"-"+day;
 };

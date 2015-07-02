@@ -1,6 +1,7 @@
 App.prototype.logout = function () {
+    var index = app.getSetting("user_interface") === "touch" ? "index_touch.html" : "index.html";
     var requestData = {
-        user_name: app.appData.formData.login.current_user
+        user_name: app.appData.formData.login.current_user.name
     };
     app.xhr(requestData, "open_data_service", "logout", {
         load: true,
@@ -14,7 +15,7 @@ App.prototype.logout = function () {
             localStorage.removeItem("business_id");
             localStorage.removeItem("business_type");
             localStorage.removeItem("settings");
-            window.location = "index.html";
+            window.location = index;
         },
         error: function () {
             //do something 
@@ -63,54 +64,53 @@ App.prototype.changePassword = function () {
 
 
 App.prototype.login = function () {
-    app.context = app.appData.formData.login;
     var data = app.getFormData(app.context);
     if (!data) return;
     var requestData = {
         username: data.username.value,
-        password: data.password.value
+        password: data.password.value,
+        user_interface : app.getSetting("user_interface")
     };
-    app.xhr(requestData, "open_data_service,open_data_service", "login,business_info", {
+    app.xhr(requestData, "open_data_service", "login", {
         load: true,
         success: function (resp) {
-            var binfo = resp.response.open_data_service_business_info.data;
-            var login = resp.response.open_data_service_login.data;
-            if (login.response === "loginsuccess") {
-                //get the session id
-                localStorage.setItem("session_id", login.rand);
-                localStorage.setItem("current_user", login.user);
-                localStorage.setItem("privileges", login.privileges);
-                localStorage.setItem("host", login.host);
-                app.onSignIn();
-                app.navigate(login.privileges, binfo);           
-            }
-            else if (login === "changepass") {
-                window.location = "change.html?user_name="+data.username.value;
-            }
-            else {
-                app.showMessage(app.context.messages[login]);
-            }
+            var l = resp.response.data;
+            var request = {
+                username: l.user,
+                user_interface: app.getSetting("user_interface") 
+            };
+            app.xhr(request,"open_data_service","business_info",{
+                load : true,
+                success : function(data){
+                    var bInfo = data.response.data;
+                    if (l.response === "loginsuccess") {
+                        //get the session id
+                        localStorage.setItem("session_id", l.rand);
+                        localStorage.setItem("current_user", l.user);
+                        localStorage.setItem("privileges", l.privileges);
+                        localStorage.setItem("host", l.host);
+                        app.navigate(l.privileges, bInfo);
+                    }
+                    else if (l === "changepass") {
+                        window.location = "change.html?user_name=" + data.username.value;
+                    }
+                    else {
+                        app.showMessage(app.context.messages[l]);
+                    }
+                }
+            });
         }
     });
     return false;
 };
 
-App.prototype.onSignIn = function(){
-   //fetch settings 
-    app.xhr({}, app.dominant_privilege, "fetch_settings", {
-        load: false,
-        success: function (resp) {
-            console.log("on sign in")
-            var r = resp.response.data;
-            localStorage.setItem("settings",JSON.stringify(r));
-        }
-    });
-};
+
 
 
 App.prototype.navigate = function (privileges, buss) {
     var adminIndex = privileges.indexOf("pos_admin_service");
     var saleIndex = privileges.indexOf("pos_sale_service");
+    var saleUrl = app.getSetting("user_interface") === "touch" ? "sale_touch.html" : "sale.html";
     //if you have more than one business id, navigate to the correct one
     if (adminIndex > -1 && saleIndex > -1) {
         //you have to select because you have both privileges
@@ -122,7 +122,7 @@ App.prototype.navigate = function (privileges, buss) {
             ok: function () {
                 var role = $("#select_role").val();
                 if (role === "seller") {
-                    app.navigateBusiness(buss, "sale.html");
+                    app.navigateBusiness(buss,saleUrl);
                 }
                 else if (role === "admin") {
                     app.navigateBusiness(buss, "admin.html");
@@ -142,7 +142,7 @@ App.prototype.navigate = function (privileges, buss) {
     }
     else if (saleIndex > -1) {
         //you're a salesperson 
-        app.navigateBusiness(buss, "sale.html");
+        app.navigateBusiness(buss,saleUrl);
     }
     else {
         //you have nothing...
@@ -191,51 +191,4 @@ App.prototype.navigateBusiness = function (buss, url) {
        window.location = url;
        
     }
-};
-
-
-
-App.prototype.navigate = function (privileges, buss) {
-    var adminIndex = privileges.indexOf("pos_admin_service");
-    var saleIndex = privileges.indexOf("pos_sale_service");
-    //if you have more than one business id, navigate to the correct one
-    if (adminIndex > -1 && saleIndex > -1) {
-        //you have to select because you have both privileges
-        var html = "<select id='select_role'>\n\
-                    <option value='seller'>Seller</option>\n\
-                    <option value='admin'>Admin</option></select>";
-
-        app.ui.modal(html, "Select Role", {
-            ok: function () {
-                var role = $("#select_role").val();
-                if (role === "seller") {
-                    app.navigateBusiness(buss, "sale.html");
-                }
-                else if (role === "admin") {
-                    app.navigateBusiness(buss, "admin.html");
-                }
-            },
-            cancel: function () {
-
-            },
-            okText: "Proceed",
-            cancelText: "Cancel"
-        });
-
-    }
-    else if (adminIndex > -1) {
-        //you're only an admin
-        app.navigateBusiness(buss, "admin.html");
-    }
-    else if (saleIndex > -1) {
-        //you're a salesperson 
-        app.navigateBusiness(buss, "sale.html");
-    }
-    else {
-        //you have nothing...
-        //no privileges found
-        //thats strange
-    }
-
-
 };

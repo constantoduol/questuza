@@ -37,7 +37,7 @@ App.prototype.generateReceipt = function () {
     app.ui.table({
         id_to_append: "receipt_area_dummy",
         headers: recHeaders,
-        values: recValues,
+        values: recValues
     });
     var username = localStorage.getItem("current_user");
     var footer = "<div><span>Date : " + new Date().toLocaleString() + "</span><br/><span>Served by: " + username + "</span></div>";

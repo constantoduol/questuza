@@ -113,7 +113,7 @@ UI.prototype.table = function (options) {
     }
 
 
-    var id = "table_" + Math.floor(Math.random() * 1000000);
+    var id = !options.id ? "table_" + Math.floor(Math.random() * 1000000) : options.id;
     var table = $("<table class='table table-condensed' id='" + id + "' style='" + options.style + "' >");
     var tr = $("<tr>");
     if (options.include_nums) {
@@ -133,6 +133,14 @@ UI.prototype.table = function (options) {
             numTd.html((x + 1));
             tr.append(numTd);
         }
+        
+        //add the on row click event if present
+        if(options.onRowClick){ 
+            tr.click(function(event){
+                options.onRowClick(options.values,event);
+            });
+        }
+        
         for (var y = 0; y < options.values.length; y++) {
             var td = $("<td>");
                         
@@ -164,6 +172,7 @@ UI.prototype.table = function (options) {
         table.append(tr);
     }
     $("#" + options.id_to_append).append(table);
+    table.addClass(options.class);
     if(options.onRender) options.onRender(id); //say that the table has finished rendering
     return id;
 };

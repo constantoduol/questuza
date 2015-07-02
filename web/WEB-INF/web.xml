@@ -17,7 +17,7 @@
         </init-param>
         <init-param>
             <param-name>default-password</param-name>
-            <param-value>pass</param-value>
+            <param-value>00000</param-value>
         </init-param>
          <init-param>
             <param-name>sendgrid-username</param-name>
@@ -45,7 +45,7 @@
         </init-param>
          <init-param>
             <param-name>debug-mode</param-name>
-            <param-value>false</param-value>
+            <param-value>true</param-value>
         </init-param>
          <init-param>
             <param-name>external-services</param-name>
@@ -89,13 +89,17 @@
             <param-value>initial</param-value>
         </init-param>
        
+       <init-param>
+            <param-name>default-user-interface</param-name>
+            <param-value>touch</param-value>
+        </init-param>
         <init-param>
             <param-name>offline-database-username</param-name>
             <param-value>root</param-value>
         </init-param>
         <init-param>
             <param-name>offline-database-password</param-name>
-             <param-value>@7enterprise#123</param-value>
+             <param-value>pasnipop</param-value>
         </init-param>
          <init-param>
             <param-name>offline-jdbc</param-name>

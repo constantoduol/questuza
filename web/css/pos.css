@@ -281,3 +281,78 @@ form {
     background: lightblue;
     color : white;
 }
+
+.signin_touch {
+    font-size: 24px;
+    background: lightblue;
+    float : right;
+    border-radius: 5px;
+    padding : 8px;
+    margin : 5px;
+}
+
+.signin_touch a {
+    color : white;
+    text-decoration: none;
+}
+
+.category_touch {
+  padding-top: 40px;
+  border: 1px solid rgb(173, 216, 230);
+  text-align: center;
+  font-size: 40px;
+  cursor: pointer;
+  background-color: rgb(173, 216, 230);
+  color: rgb(0, 0, 0);
+  margin : 15px;
+}
+
+.category_touch:hover {
+    color: white;
+}
+
+.card_touch {
+    border: 1px solid rgb(173, 216, 230);
+  padding: 10px;
+  border-radius: 5px;
+  background: rgb(255, 255, 255);
+}
+
+.btn_touch {
+  background-color: rgb(173, 216, 230);
+  padding: 10px;
+  color: rgb(0,0, 0);
+  font-size: 16px;
+  text-decoration: none;
+}
+
+.btn_touch:hover {
+    color:white;
+    text-decoration: none;
+}
+
+.table-striped>tbody>tr:nth-of-type(odd) {
+   cursor: pointer;
+}
+
+.table-striped>tbody>tr:nth-of-type(even) {
+   background-color: rgba(173, 216, 230, 0.2);
+   cursor: pointer;
+}
+
+.change_touch {
+   font-size: 30px;
+  padding: 10px;
+  /* border-radius: 5px; */
+  border: 2px solid rgb(173, 216, 230);
+}
+
+#menu_card a {
+  margin-right: 20px;  
+}
+
+#product_categories_display{
+      padding: 10px;
+  border: 1px solid rgb(173, 216, 230);
+  margin-top: 10px;
+}
