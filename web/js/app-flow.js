@@ -127,12 +127,13 @@ AppData.prototype.formData = {
         "/index_touch.html" : function(){
             app.keyPad("keypad","password");
             app.context = app.appData.formData.login_touch;
+            $("#password").val("");
+            $("#password").focus();
             app.xhr({}, "open_data_service", "fetch_settings", {
                 load: false,
                 success: function (resp) {
                     var r = resp.response.data;
                     localStorage.setItem("settings", JSON.stringify(r));
-                     $("#password").val("");
                 }
             });
         },
@@ -174,8 +175,6 @@ AppData.prototype.formData = {
             
             $("#logout_link").unbind("click");
             $("#logout_link").click(app.logout);
-            
-            app.generateReceiptHeaders();
             
             if (app.platform === "web") {
                 if (!$("#receipt_area")[0]) {
@@ -382,11 +381,8 @@ AppData.prototype.formData = {
                     $("#phone_number").val(resp.PHONE_NUMBER[0]);
                     $("#company_website").val(resp.COMPANY_WEBSITE[0]);
                     $("#business_type").val(resp.BUSINESS_TYPE[0]);
+                    $("#business_extra_data").val(resp.BUSINESS_EXTRA_DATA[0]);
 
-                },
-                error: function () {
-                    //do something 
-                    app.showMessage(app.context.error_message);
                 }
             });
         },
@@ -426,7 +422,7 @@ AppData.prototype.formData = {
             
             app.setUpDate("start_date"); //no limit
             app.setUpDate("end_date"); //no limit
-            app.setUpAuto(app.context.stock_history.fields.search_stock);
+            app.setUpAuto(app.context.stock_history.fields.search_products);
             var bType = app.appData.formData.login.current_user.business_type;
             if (bType === "services") {
                 $("#stock_low_btn").remove();
@@ -878,16 +874,16 @@ AppData.prototype.formData = {
                 report_type: {required: true, message: "Report type is required"},
                 start_date: {required: true, message: "Start date is required"},
                 end_date: {required: true, message: "End date is required"},
-                search_stock: {
+                search_products: {
                     required: false,
                     autocomplete: {
-                        id: "search_stock",
+                        id: "search_products",
                         database: "pos_data",
                         table: "PRODUCT_DATA",
                         column: "*",
                         where: function () {
                             var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_NAME  LIKE '" + $("#search_stock").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_NAME  LIKE '" + $("#search_products").val() + "%' AND BUSINESS_ID = '" + id + "'";
                         },
                         orderby: "PRODUCT_NAME ASC",
                         limit: 10,
@@ -921,7 +917,8 @@ AppData.prototype.formData = {
                 postal_address: {required: false},
                 phone_number: {required: false},
                 company_website: {required: false},
-                business_type: {required: true, message: "Business type is required"}
+                business_type: {required: true, message: "Business type is required"},
+                business_extra_data: {required: false}
             },
             help_url : "/help/business.html"
         },

@@ -159,6 +159,7 @@ App.prototype.navigateBusiness = function (buss, url) {
         localStorage.setItem("business_id", buss.business_ids[0]);
         localStorage.setItem("business_type", buss.business_types[0]);
         localStorage.setItem("business_name", buss.business_names[0]);
+        localStorage.setItem("business_extra_data",buss.business_extra_data[0]);
     }
     else if (buss.business_ids && buss.business_ids.length > 1) {
         var options = "";
@@ -171,10 +172,12 @@ App.prototype.navigateBusiness = function (buss, url) {
             ok: function () {
                 var businessId = $("#select_business_id").val();
                 var businessType = buss.business_types[buss.business_ids.indexOf(businessId)];
-                var businessName =  buss.business_names[buss.business_ids.indexOf(businessId)];
+                var businessName = buss.business_names[buss.business_ids.indexOf(businessId)];
+                var busExtra = buss.business_extra_data[buss.business_ids.indexOf(businessId)];
                 localStorage.setItem("business_type", businessType);
                 localStorage.setItem("business_id", businessId);
                 localStorage.setItem("business_name", businessName);
+                localStorage.setItem("business_extra_data",busExtra);
                 window.location = url;
             },
             cancel: function () {

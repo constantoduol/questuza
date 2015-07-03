@@ -199,6 +199,7 @@ public class PosAdminService implements Serviceable {
         
         //initialise settings
         String defaultInterface = serv.getConfig().getInitParameter("default-user-interface");
+        io.out("this is the default interface: "+defaultInterface);
         Database db = new Database("user_server", null);
         boolean exists = db.ifValueExists("user_interface", "CONF_DATA", "CONF_KEY");
         if(exists) {
@@ -440,7 +441,7 @@ public class PosAdminService implements Serviceable {
     }
 
     @Endpoint(name = "create_product")
-    public void createProduct(Server serv, ClientWorker worker) {
+    public synchronized void createProduct(Server serv, ClientWorker worker) {
         Database db = new Database(POS_DATA, worker.getSession());
         JSONObject requestData = worker.getRequestData();
         String productName = requestData.optString("product_name");

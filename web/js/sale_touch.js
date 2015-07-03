@@ -8,6 +8,7 @@ App.prototype.loadCategories = function(id,type,filter){
     app.xhr(request,"pos_sale_service,pos_sale_service","product_categories,fetch_categories",{
         load : false,
         success : function(data){
+            console.log(data);
             //if the user is uncategorized or all show all the categories
             var userCats = data.response.pos_sale_service_fetch_categories.data.CATEGORY;
             var allCats = data.response.pos_sale_service_product_categories.data;
@@ -24,7 +25,6 @@ App.prototype.loadCategories = function(id,type,filter){
             else {
                 cats = allCats["PRODUCT_SUB_CATEGORY"];
             }
-            console.log(cats);
             app.loadCats(cats,8,id,type,filter);
         }
     });
@@ -36,11 +36,11 @@ App.prototype.loadCats = function (cats,max,displayArea,type,filter) {
         var data = app.getRowAndCol(x - 1,max);
         var width = (app.getDim()[0]/10);
         var font_size = width/4;
-        var heightCat = app.getDim()[1]*0.60;
+        var heightCat = app.getDim()[1]*0.57;
         var heightSale = app.getDim()[1]*0.3;
         $("#product_category_card").css("height",heightCat+"px");
         $("#current_sale_card").css("height",heightSale+"px");
-        var cont = {font_size : font_size,width: width,name : name,filter : filter, row : data[0], col : data[1] };
+        var cont = {font_size : font_size,name : name,filter : filter, row : data[0], col : data[1] };
         var clickHandler = function(subCategory,category){
             //load the subcategories
             //if type is sub_category set a different click handler
@@ -69,9 +69,7 @@ App.prototype.addCategory = function (displayArea,max,cont,clickHandler){
      }
 
     var currentItem = $("<td>");
-    var contDiv = $("<div class='category_touch'>"+cont.name+"</div>");
-    contDiv.css("width",cont.width+"px");
-    contDiv.css("height",cont.width+"px");
+    var contDiv = $("<div class='category_touch btn'>"+cont.name+"</div>");;
     contDiv.css("font-size",cont.font_size+"px");
     contDiv.click(function(){
         clickHandler(cont.name,cont.filter);
@@ -340,9 +338,9 @@ App.prototype.generateReceipt = function () {
     recValues[3].push("<b>" + app.formatMoney(totalCost) + "</b>");
     var bName = localStorage.getItem("business_name");
     var header = "<div><h3>" + bName + "</h3></div>";
-    var receiptHeader = localStorage.getItem("receipt_header");
+    var receiptHeader = app.getBusinessExtra(0);
     header = header + receiptHeader;
-    var receiptFooter = localStorage.getItem("receipt_footer");
+    var receiptFooter = app.getBusinessExtra(1);
     recArea.append(header);
     app.ui.table({
         id_to_append: "receipt_area_dummy",
@@ -453,9 +451,3 @@ App.prototype.todaySales = function () {
     });
 };
 
-App.prototype.generateReceiptHeaders = function(){
-    var header = "<div><span>P.O Box 637-00618 RUARAKA</span><br><span>Tel : 0726720983</div>";
-    var footer = "THIS IS NOT A FINAL RECEIPT";
-    localStorage.setItem("receipt_header",header);
-    localStorage.setItem("receipt_footer",footer);
-};

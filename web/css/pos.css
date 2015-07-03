@@ -297,39 +297,28 @@ form {
 }
 
 .category_touch {
-  padding-top: 40px;
-  border: 1px solid rgb(173, 216, 230);
-  text-align: center;
-  font-size: 40px;
-  cursor: pointer;
-  background-color: rgb(173, 216, 230);
-  color: rgb(0, 0, 0);
-  margin : 15px;
+  line-height: 3.5;
+  padding-left: 30px;
+  padding-right: 30px;
+  border-radius: 0px;
+  margin: 10px;
 }
 
-.category_touch:hover {
-    color: white;
-}
 
 .card_touch {
     border: 1px solid rgb(173, 216, 230);
-  padding: 10px;
-  border-radius: 5px;
+  padding: 5px;
+  border-radius: 0px;
   background: rgb(255, 255, 255);
 }
 
 .btn_touch {
-  background-color: rgb(173, 216, 230);
   padding: 10px;
-  color: rgb(0,0, 0);
   font-size: 16px;
-  text-decoration: none;
+  border-radius: 0px;
 }
 
-.btn_touch:hover {
-    color:white;
-    text-decoration: none;
-}
+
 
 .table-striped>tbody>tr:nth-of-type(odd) {
    cursor: pointer;

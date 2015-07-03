@@ -89,7 +89,7 @@ public class PosSaleService implements Serviceable {
                     }
 
                     if(comm > 0) { //track only if we have a value
-                        Double commValue = comm;
+                        Double commValue = comm*Integer.parseInt(currentQty);
                         db.doInsert("COMMISSION_DATA", new String[]{userName, busId, prodId, commValue.toString(),currentQty, "!NOW()"});
                     }
                 }

@@ -665,21 +665,23 @@ App.prototype.allProducts = function (handler) {
                     $.each(resp.PRODUCT_NAME, function (index) {
                         resp.CREATED[index] = new Date(resp.CREATED[index]).toLocaleDateString();
                         resp.PRODUCT_EXPIRY_DATE[index] = new Date(resp.PRODUCT_EXPIRY_DATE[index]).toLocaleDateString();
+                        resp.BP_UNIT_COST[index] = app.formatMoney(resp.BP_UNIT_COST[index]);
+                        resp.SP_UNIT_COST[index] = app.formatMoney(resp.SP_UNIT_COST[index]);
                     });
                     
                     if (bType === "goods") {
-                        headers = ["Product Name", "Type", "BP/Unit", "SP/Unit", "Available Qty", "Reminder Limit", "Date Created", "Expiry Date"];
-                        values = [resp.PRODUCT_NAME, resp.PRODUCT_TYPE, resp.BP_UNIT_COST, resp.SP_UNIT_COST, resp.PRODUCT_QTY,
+                        headers = ["Product Name", "Category","S/Category", "BP/Unit", "SP/Unit", "Available Qty", "Reminder Limit", "Date Created", "Expiry Date"];
+                        values = [resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.BP_UNIT_COST, resp.SP_UNIT_COST, resp.PRODUCT_QTY,
                             resp.PRODUCT_REMIND_LIMIT, resp.CREATED, resp.PRODUCT_EXPIRY_DATE];
                     }
                     else if (bType === "services") {
                         if (app.getSetting("track_stock") === "1") {
-                            headers = ["Product Name", "Type", "SP/Unit","Available Qty", "Date Created"];
-                            values = [resp.PRODUCT_NAME, resp.PRODUCT_TYPE, resp.SP_UNIT_COST, resp.PRODUCT_QTY, resp.CREATED];
+                            headers = ["Product Name", "Category","S/Category", "SP/Unit","Available Qty", "Date Created"];
+                            values = [resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.SP_UNIT_COST, resp.PRODUCT_QTY, resp.CREATED];
                         }
                         else {
-                            headers = ["Product Name", "Type", "SP/Unit", "Date Created"];
-                            values = [resp.PRODUCT_NAME, resp.PRODUCT_TYPE, resp.SP_UNIT_COST, resp.CREATED];
+                            headers = ["Product Name", "Category","S/Category" ,"SP/Unit", "Date Created"];
+                            values = [resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.SP_UNIT_COST, resp.CREATED];
                         }
                     }
                      app.ui.table({
@@ -698,8 +700,12 @@ App.prototype.allProducts = function (handler) {
                     $.each(resp.PRODUCT_NAME, function (index) {
                         //set up onclick handlers
                         $("#item_select_" + index).click(function () {
-                            var defaultHandler = handler === "sale.html" ? undefined : app.context.product.fields.search_products.autocomplete_handler;
-                            var afterSelectItem = handler === "sale.html" ? app.sale : undefined;
+                            var defaultHandler = handler === app.pages.sale ? undefined : app.context.product.fields.search_products.autocomplete_handler;
+                            var afterSelectItem = handler === app.pages.sale ? app.sale : function(data,index){
+                                $("#search_products").attr("current-item",data.ID[index]);
+                                $("#search_products").val(data.PRODUCT_NAME[index]);
+                                $("#product_name").attr("old-product-name",data.PRODUCT_NAME[index]);
+                            };
                             app.paginateSelectItem({
                                 data: app.context.product.fields.search_products.autocomplete.data,
                                 index: index,
@@ -717,8 +723,8 @@ App.prototype.allProducts = function (handler) {
 
 App.prototype.goodsStockHistory = function () {
     var data = app.getFormData(app.context.stock_history);
-    var id = $("#search_stock").attr("current-item");
-    id = $("#search_stock").val().trim() === ""  ? "all" : id;
+    var id = $("#search_products").attr("current-item");
+    id = $("#search_products").val().trim() === ""  ? "all" : id;
     if (!data)
         return;
     if (Date.parse(data.end_date.value) < Date.parse(data.start_date.value)) {
@@ -785,6 +791,7 @@ App.prototype.goodsStockHistory = function () {
                         resp.STOCK_QTY[index] = "<span style='color :" + color + "'>" + resp.STOCK_QTY[index] + "</span>";
                         resp.STOCK_COST_SP[index] = "<span style='color :" + color + "'>" + app.formatMoney(resp.STOCK_COST_SP[index]) + "</span>";
                         resp.STOCK_COST_BP[index] = "<span style='color :" + color + "'>" + app.formatMoney(resp.STOCK_COST_BP[index]) + "</span>";
+                        resp.PROFIT[index] = app.formatMoney(resp.PROFIT[index]);
 
                         totalQty = totalQty + qty;
                         totalSP = totalSP + amountSP;
@@ -827,8 +834,8 @@ App.prototype.goodsStockHistory = function () {
 
 App.prototype.servicesStockHistory = function () {
     var data = app.getFormData(app.context.stock_history);
-    var id = $("#search_stock").attr("current-item");
-    id = $("#search_stock").val().trim() === ""  ? "all" : id;
+    var id = $("#search_products").attr("current-item");
+    id = $("#search_products").val().trim() === ""  ? "all" : id;
     if (!data)
         return;
     if (Date.parse(data.end_date.value) < Date.parse(data.start_date.value)) {
@@ -1077,8 +1084,8 @@ App.prototype.stockHistory = function () {
 
 App.prototype.reportHistory = function(options){
     var data = app.getFormData(app.context.stock_history);
-    var id = $("#search_stock").attr("current-item");
-    id = $("#search_stock").val().trim() === ""  ? "all" : id;
+    var id = $("#search_products").attr("current-item");
+    id = $("#search_products").val().trim() === ""  ? "all" : id;
     if (!data) return;
     if (Date.parse(data.end_date.value) < Date.parse(data.start_date.value)) {
         app.showMessage(app.context.invalid_dates);
@@ -1307,7 +1314,8 @@ App.prototype.saveBusiness = function (actionType) {
         phone_number: data.phone_number.value,
         company_website: data.company_website.value,
         business_type: data.business_type.value,
-        business_owner: app.appData.formData.login.current_user.name
+        business_owner: app.appData.formData.login.current_user.name,
+        business_extra_data : data.business_extra_data.value
     };
     var svc = actionType === "delete" ? "open_data_service,pos_admin_service" : "open_data_service";
     var msg = actionType === "delete" ? "save_business,delete_business" : "save_business";
