@@ -37,9 +37,11 @@ import java.util.logging.Logger;
             columns = {"ID VARCHAR(10) PRIMARY KEY",
                 "BUSINESS_ID VARCHAR(20)",
                 "PRODUCT_NAME TEXT",
-                "PRODUCT_QTY INT",
+                "PRODUCT_QTY FLOAT",
                 "PRODUCT_CATEGORY TEXT",
                 "PRODUCT_SUB_CATEGORY TEXT",
+                "PRODUCT_PARENT VARCHAR(10)",
+                "PRODUCT_UNIT_SIZE FLOAT",
                 "BP_UNIT_COST FLOAT",
                 "SP_UNIT_COST FLOAT",
                 "PRODUCT_REMIND_LIMIT INT",
@@ -58,7 +60,7 @@ import java.util.logging.Logger;
                 "TRAN_TYPE BOOL",
                 "STOCK_COST_BP FLOAT",
                 "STOCK_COST_SP FLOAT",
-                "STOCK_QTY INT",
+                "STOCK_QTY FLOAT",
                 "PROFIT FLOAT",
                 "TRAN_FLAG TEXT",
                 "NARRATION TEXT",
@@ -116,7 +118,8 @@ import java.util.logging.Logger;
             }),
     @Model(
             database = "pos_data", table = "SUPPLIER_ACCOUNT",
-            columns = {"SUPPLIER_ID VARCHAR(10)",
+            columns = {
+                "SUPPLIER_ID VARCHAR(10)",
                 "BUSINESS_ID VARCHAR(20)",
                 "PRODUCT_ID VARCHAR(10)",
                 "TRANS_AMOUNT FLOAT",
@@ -128,7 +131,8 @@ import java.util.logging.Logger;
             }),
       @Model(
             database = "pos_data", table = "USER_CATEGORIES",
-            columns = {"USER_NAME TEXT",
+            columns = {
+                "USER_NAME TEXT",
                 "CATEGORY TEXT",
                 "CREATED DATETIME"
             })
@@ -194,6 +198,7 @@ public class PosAdminService implements Serviceable {
         serv.addSafeTable("user_server", "BUSINESS_USERS", "USER_NAME,ID");
         serv.addSafeTable("pos_data", "PRODUCT_DATA", "*");
         serv.addSafeTable("pos_data", "SUPPLIER_DATA", "*");
+        serv.addSafeTable("pos_data", "EXPENSE_DATA", "RESOURCE_NAME");
         //check that app is activated
         validateActivation(serv);
         
@@ -243,6 +248,9 @@ public class PosAdminService implements Serviceable {
         String comm = requestData.optString("commission", "0");
         String busId = requestData.optString("business_id");
         String bType = requestData.optString("business_type");
+        String pProduct = requestData.optString("product_parent");
+        String unitSize = requestData.optString("product_unit_size");
+        productQty = pProduct.trim().length() > 0 ? "0" : productQty;
         String userName = worker.getSession().getAttribute("username").toString();
         //check that we are not duplicating products
         boolean exists = db.ifValueExists(new String[]{busId, productName}, "PRODUCT_DATA", new String[]{"BUSINESS_ID", "PRODUCT_NAME"});
@@ -257,10 +265,10 @@ public class PosAdminService implements Serviceable {
                 Integer storedProductQty = Integer.parseInt(productData.optJSONArray("PRODUCT_QTY").optString(0));
                 Integer newProductQty = Integer.parseInt(productQty);
                 Database.executeQuery("UPDATE PRODUCT_DATA SET PRODUCT_NAME=?, "
-                        + "PRODUCT_QTY=?, PRODUCT_CATEGORY = ?,PRODUCT_SUB_CATEGORY = ?, BP_UNIT_COST=?, "
+                        + "PRODUCT_QTY=?, PRODUCT_CATEGORY = ?,PRODUCT_SUB_CATEGORY = ?,PRODUCT_PARENT = ?, PRODUCT_UNIT_SIZE = ?, BP_UNIT_COST=?, "
                         + "SP_UNIT_COST=?, PRODUCT_REMIND_LIMIT=?, "
                         + "PRODUCT_EXPIRY_DATE=?,PRODUCT_NARRATION=?,TAX = ?, COMMISSION = ? WHERE ID= ? AND BUSINESS_ID = ? ", db,
-                        productName, productQty, productCat,productSubCat,
+                        productName, productQty, productCat,productSubCat, pProduct,unitSize,
                         productBp, productSp, productRlimit, productEdate, productNarr, tax, comm, prodId, busId);
                 if (storedProductQty > newProductQty) {
                     //reduction in stock
@@ -457,7 +465,9 @@ public class PosAdminService implements Serviceable {
         String comm = requestData.optString("commission", "0");
         String busId = requestData.optString("business_id");
         String bType = requestData.optString("business_type");
-
+        String pProduct = requestData.optString("product_parent");
+        String unitSize = requestData.optString("product_unit_size");
+        productQty = pProduct.trim().length() > 0 ? "0" : productQty;
         String userName = worker.getSession().getAttribute("username").toString();
         //check whether the product exists
         boolean exists = db.ifValueExists(new String[]{busId, productName}, "PRODUCT_DATA", new String[]{"BUSINESS_ID", "PRODUCT_NAME"});
@@ -471,9 +481,12 @@ public class PosAdminService implements Serviceable {
                 String prodId = new UniqueRandom(10).nextMixedRandom();
                 UserAction action = new UserAction(worker, "CREATED PRODUCT " + productName);
                 db.doInsert("PRODUCT_DATA", new String[]{prodId, busId, productName, productQty, productCat,productSubCat,
-                    productBp, productSp, productRlimit,
+                    pProduct,unitSize,productBp, productSp, productRlimit,
                     productEdate, productNarr, tax, comm, action.getActionID(), "!NOW()"});
+                
+                
                 addStock(prodId, busId, productQty, productBp, productSp, 1, productNarr, "stock_in", bType, db, userName);
+                
                 action.saveAction();
                 worker.setResponseData("SUCCESS");
                 serv.messageToClient(worker);
@@ -505,13 +518,20 @@ public class PosAdminService implements Serviceable {
     public void allProducts(Server serv, ClientWorker worker) {
         Database db = new Database(POS_DATA, worker.getSession());
         JSONObject requestData = worker.getRequestData();
+        String cat = requestData.optString("category");
         String busId = requestData.optString("business_id");
-        JSONObject data = db.query()
+        JSONObject data;
+        if(cat != null && !cat.isEmpty() && !cat.equals("all")){
+            data = db.query("SELECT * FROM PRODUCT_DATA WHERE PRODUCT_CATEGORY=? ORDER BY PRODUCT_NAME ASC",cat);
+        }
+        else {
+            data = db.query()
                 .select("*")
                 .from("PRODUCT_DATA")
                 .where("BUSINESS_ID='" + busId + "'")
                 .order("PRODUCT_NAME ASC")
                 .execute();
+        }
         worker.setResponseData(data);
         serv.messageToClient(worker);
     }
@@ -576,7 +596,6 @@ public class PosAdminService implements Serviceable {
             worker.setResponseData(data);
             serv.messageToClient(worker);
         } catch (Exception ex) {
-            ex.printStackTrace();
             Logger.getLogger(PosAdminService.class.getName()).log(Level.SEVERE, null, ex);
             worker.setResponseData("FAIL");
             serv.messageToClient(worker);
@@ -946,14 +965,41 @@ public class PosAdminService implements Serviceable {
     }
     
     @Endpoint(name="load_products",shareMethodWith = {"pos_sale_service"})
-    public void loadProducts(Server serv,ClientWorker worker){
+    public void loadProducts(Server serv,ClientWorker worker) throws JSONException{
         Database db = new Database(POS_DATA, worker.getSession());
         JSONObject requestData = worker.getRequestData();
         String cat = requestData.optString("category");
         String subCat = requestData.optString("sub_category");
         JSONObject data = db.query("SELECT * FROM PRODUCT_DATA WHERE PRODUCT_CATEGORY = ? AND PRODUCT_SUB_CATEGORY = ? ORDER BY PRODUCT_NAME ASC",cat,subCat);
-        worker.setResponseData(data);
+        JSONObject allProds = db.query("SELECT * FROM PRODUCT_DATA");
+        JSONObject all = new JSONObject();
+        all.put("categorized_products", data);
+        all.put("all_products", allProds);
+        worker.setResponseData(all);
         serv.messageToClient(worker);
+    }
+    
+    
+    @Endpoint(name="fetch_item_by_id")
+    public void fetchItemById(Server serv,ClientWorker worker){
+        JSONObject requestData = worker.getRequestData();
+        String database = requestData.optString("database");
+        String table = requestData.optString("table");
+        String column = requestData.optString("column");
+        String where = requestData.optString("where");
+        boolean isSafe = serv.isTableSafe(database, table, column);
+        Database db = new Database(database, worker.getSession());
+        if(isSafe){
+            io.out("SELECT "+column+" FROM "+table+" WHERE "+where+" ");
+            JSONObject data = db.query("SELECT "+column+" FROM "+table+" WHERE "+where+" ");
+            worker.setResponseData(data);
+            serv.messageToClient(worker);
+        }
+        else {
+           worker.setResponseData(Message.FAIL);
+           worker.setReason("Specified query is not allowed");
+           serv.messageToClient(worker);
+        }
     }
     
     @Endpoint(name="add_category")

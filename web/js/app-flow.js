@@ -308,7 +308,20 @@ AppData.prototype.formData = {
             app.setUpAuto(app.context.product.fields.search_products);
             app.setUpAuto(app.context.product.fields.product_category);
             app.setUpAuto(app.context.product.fields.product_sub_category);
+            app.setUpAuto(app.context.product.fields.product_parent);
             app.setUpDate("product_expiry_date", true); //has limit
+            app.xhr({category_type : "category"},app.dominant_privilege,"product_categories",{
+                load : false,
+                success : function(resp){
+                    var r = resp.response.data.PRODUCT_CATEGORY;
+                    $("#product_categories").html("");
+                    $("#product_categories").append($("<option value='all'>All</option>"));
+                    $.each(r, function (index) {
+                        var cat = r[index];
+                        $("#product_categories").append($("<option value=" + cat + ">" + cat + "</option>"));
+                    }); 
+                }
+            });
         },
         "/views/service_product.html": function () {
             app.sub_context = app.context.service_product;
@@ -319,13 +332,26 @@ AppData.prototype.formData = {
             $("#search_link").click(function () {
                 app.allProducts(app.pages.products);
             });
-            app.setUpAuto(app.context.product.fields.search_products);
-            app.setUpAuto(app.context.product.fields.product_category);
-            app.setUpAuto(app.context.product.fields.product_sub_category);
+            app.setUpAuto(app.context.service_product.fields.search_products);
+            app.setUpAuto(app.context.service_product.fields.product_category);
+            app.setUpAuto(app.context.service_product.fields.product_sub_category);
+            app.setUpAuto(app.context.service_product.fields.product_parent);
             if(localStorage.getItem("track_stock") === "0" ){
                 $("#product_quantity").remove();
                 $("#product_quantity_label").remove();
             }
+            app.xhr({category_type: "category"}, app.dominant_privilege, "product_categories", {
+                load: false,
+                success: function (resp) {
+                    var r = resp.response.data.PRODUCT_CATEGORY;
+                    $("#product_categories").html("")
+                    $("#product_categories").append($("<option value='all'>All</option>"));
+                    $.each(r, function (index) {
+                        var cat = r[index];
+                        $("#product_categories").append($("<option value=" + cat + ">" + cat + "</option>"));
+                    });
+                }
+            });
         },
         "/views/supplier_select.html" : function(){
             app.setUpAuto(app.context.suppliers.fields.search_suppliers);
@@ -392,6 +418,7 @@ AppData.prototype.formData = {
             app.setUpDate("start_date"); //no limit
             app.setUpDate("end_date"); //no limit
             $("#profit_and_loss_btn").click(app.profitAndLoss);
+            app.setUpAuto(app.context.expense.fields.expense_name);
         },
         "/change.html": function () {
             $("#user_name").val(app.getUrlParameter("user_name"));
@@ -672,13 +699,17 @@ AppData.prototype.formData = {
                         }
                     },
                     autocomplete_handler: {
-                        product_name: "PRODUCT_NAME",
-                        product_category: "PRODUCT_CATEGORY",
-                        product_sub_category: "PRODUCT_SUB_CATEGORY",
-                        product_sp_unit_cost: "SP_UNIT_COST",
-                        product_narration: "PRODUCT_NARRATION",
-                        tax : "TAX",
-                        commission : "COMMISSION"
+                        fields : {
+                            product_name: "PRODUCT_NAME",
+                            product_category: "PRODUCT_CATEGORY",
+                            product_sub_category: "PRODUCT_SUB_CATEGORY",
+                            product_sp_unit_cost: "SP_UNIT_COST",
+                            product_narration: "PRODUCT_NARRATION",
+                            product_parent: "PRODUCT_PARENT",
+                            tax: "TAX",
+                            commission: "COMMISSION"
+                        }
+                       
                     }
                 },
                 product_quantity: {required: false, sign : "+"},
@@ -717,6 +748,27 @@ AppData.prototype.formData = {
                         data: {}
                     }
                 },
+                product_parent: {
+                    required : false,
+                    autocomplete: {
+                        id: "product_parent",
+                        database: "pos_data",
+                        table: "PRODUCT_DATA",
+                        column: "*",
+                        where: function () {
+                            var id = app.appData.formData.login.current_user.business_id;
+                            return "PRODUCT_NAME  LIKE '" + $("#product_parent").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                        },
+                        orderby: "PRODUCT_NAME ASC",
+                        limit: 10,
+                        key: "PRODUCT_NAME",
+                        data: {},
+                        after: function (data, index) {
+                            var prodId = data.ID[index];
+                            $("#product_parent").attr("current-item", prodId);
+                        }
+                    }
+                },
                 product_sp_unit_cost: {required: true, message: "Product selling price per unit is required", sign : "+"},
                 product_narration: {required: false},
                 tax : {required:false, sign : "+"},
@@ -746,17 +798,37 @@ AppData.prototype.formData = {
                         }
                     },
                     autocomplete_handler: {
-                        product_name: "PRODUCT_NAME",
-                        product_quantity: "PRODUCT_QTY",
-                         product_category: "PRODUCT_CATEGORY",
-                        product_sub_category: "PRODUCT_SUB_CATEGORY",
-                        product_bp_unit_cost: "BP_UNIT_COST",
-                        product_sp_unit_cost: "SP_UNIT_COST",
-                        product_reminder_limit: "PRODUCT_REMIND_LIMIT",
-                        product_expiry_date: "PRODUCT_EXPIRY_DATE",
-                        product_narration: "PRODUCT_NARRATION",
-                        tax : "TAX",
-                        commission : "COMMISSION"
+                        fields : {
+                            product_name: "PRODUCT_NAME",
+                            product_quantity: "PRODUCT_QTY",
+                            product_category: "PRODUCT_CATEGORY",
+                            product_sub_category: "PRODUCT_SUB_CATEGORY",
+                            product_bp_unit_cost: "BP_UNIT_COST",
+                            product_sp_unit_cost: "SP_UNIT_COST",
+                            product_reminder_limit: "PRODUCT_REMIND_LIMIT",
+                            product_expiry_date: "PRODUCT_EXPIRY_DATE",
+                            product_narration: "PRODUCT_NARRATION",
+                            tax: "TAX",
+                            commission: "COMMISSION"
+                        },
+                        after : function(data,index){
+                            var parentId = data.PRODUCT_PARENT[index];
+                            console.log(parentId);
+                            $("#product_parent").attr("current-item",parentId);
+                            app.fetchItemById({
+                                database : "pos_data",
+                                table : "PRODUCT_DATA",
+                                column : "*",
+                                where : function(){
+                                   var id = app.appData.formData.login.current_user.business_id;
+                                   return "ID = '"+parentId+"' AND BUSINESS_ID = '" + id + "'";
+                                },
+                                success : function(data){
+                                    var r = data.response.data;
+                                    $("#product_parent").val(r.PRODUCT_NAME[0]);
+                                }
+                            });
+                        }
                     }
                 },
                 product_name: {required: true, message: "Product name is required"},
@@ -795,6 +867,27 @@ AppData.prototype.formData = {
                         data: {}
                     }
                 },
+                product_parent: {
+                    required : false,
+                    autocomplete: {
+                        id: "product_parent",
+                        database: "pos_data",
+                        table: "PRODUCT_DATA",
+                        column: "*",
+                        where: function () {
+                            var id = app.appData.formData.login.current_user.business_id;
+                            return "PRODUCT_NAME  LIKE '" + $("#product_parent").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                        },
+                        orderby: "PRODUCT_NAME ASC",
+                        limit: 10,
+                        key: "PRODUCT_NAME",
+                        data: {},
+                        after: function (data, index) {
+                            var prodId = data.ID[index];
+                            $("#product_parent").attr("current-item", prodId);
+                        }
+                    }
+                },
                 product_bp_unit_cost: {required: true, message: "Product buying price per unit is required", sign : "+"},
                 product_sp_unit_cost: {required: true, message: "Product selling price per unit is required", sign : "+"},
                 product_reminder_limit: {required: true, message: "Product reminder limit is required", sign : "+"},
@@ -827,15 +920,17 @@ AppData.prototype.formData = {
                         }
                     },
                     autocomplete_handler: {
-                        supplier_name: "SUPPLIER_NAME",
-                        phone_number: "PHONE_NUMBER",
-                        email_address: "EMAIL_ADDRESS",
-                        postal_address: "POSTAL_ADDRESS",
-                        company_website: "WEBSITE",
-                        contact_person_name: "CONTACT_PERSON_NAME",
-                        contact_person_phone: "CONTACT_PERSON_PHONE",
-                        city: "CITY",
-                        country : "COUNTRY"
+                        fields : {
+                            supplier_name: "SUPPLIER_NAME",
+                            phone_number: "PHONE_NUMBER",
+                            email_address: "EMAIL_ADDRESS",
+                            postal_address: "POSTAL_ADDRESS",
+                            company_website: "WEBSITE",
+                            contact_person_name: "CONTACT_PERSON_NAME",
+                            contact_person_phone: "CONTACT_PERSON_PHONE",
+                            city: "CITY",
+                            country: "COUNTRY"
+                        }
                     }
                 },
                 supplier_name: {required: true, message: "Supplier's name is required"},
@@ -897,7 +992,28 @@ AppData.prototype.formData = {
         expense: {
             fields: {
                 resource_type: {required: true, message: "Resource type is required"},
-                expense_name: {required: true, message: "Expense/Income name is required"},
+                expense_name: {
+                    required: true, 
+                    message: "Expense/Income name is required",
+                    autocomplete: {
+                        id: "expense_name",
+                        database: "pos_data",
+                        table: "EXPENSE_DATA",
+                        column: "RESOURCE_NAME",
+                        where: function () {
+                            var id = app.appData.formData.login.current_user.business_id;
+                            return "RESOURCE_NAME  LIKE '" + $("#expense_name").val() + "%'"+
+                                    " AND BUSINESS_ID = '" + id + "' AND RESOURCE_TYPE='"+$("#resource_type").val()+"'";
+                        },
+                        orderby: "RESOURCE_NAME ASC",
+                        limit: 10,
+                        key: "RESOURCE_NAME",
+                        data: {},
+                        after: function (data, index) {
+                          console.log(data); 
+                        }
+                    }
+                },
                 expense_amount: {required: true, message: "Expense/Income amount is required", sign : "+"}
             },
             help_url : "/help/expenses.html"

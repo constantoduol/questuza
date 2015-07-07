@@ -351,10 +351,14 @@ App.prototype.print = function (options) {
 
 App.prototype.defaultAutoHandler = function (autoHandler, data, index) {
     //{id : key, id : key}
-    $.each(autoHandler, function (id) {
-        var key = autoHandler[id];
+    $.each(autoHandler.fields, function (id) {
+        var key = autoHandler.fields[id];
         $("#" + id).val(data[key][index]);
     });
+    if(autoHandler.after){
+        autoHandler.after(data, index);
+    }
+    
 };
 
 App.prototype.getSetting = function(name){

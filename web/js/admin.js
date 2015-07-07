@@ -513,6 +513,23 @@ App.prototype.supplierSelect = function(){
     });
 };
 
+
+App.prototype.fetchItemById = function(options){
+   var request = {
+       database : options.database,
+       table : options.table,
+       column : options.column,
+       where : options.where()
+   };
+   app.xhr(request,app.dominant_privilege,"fetch_item_by_id",{
+       load : false,
+       success : function(data){
+          options.success(data); 
+       }
+   });
+};
+
+
 App.prototype.supplierAndProduct = function(actionType,prodId,supId){
     if(actionType === "create"){
         supId = $("#search_suppliers").attr("current-item");
@@ -648,7 +665,10 @@ App.prototype.allSuppliers = function(){
 };
 
 App.prototype.allProducts = function (handler) {
-    app.xhr({}, app.dominant_privilege, "all_products", {
+    var request = {
+        category : $("#product_categories").val()
+    };
+    app.xhr(request, app.dominant_privilege, "all_products", {
         load: true,
         success: function (data) {
             var resp = data.response.data;
@@ -771,7 +791,7 @@ App.prototype.goodsStockHistory = function () {
                             color = "orange";
                         }
 
-                        var qty = type === "1" ? parseInt(resp.STOCK_QTY[index]) : -parseInt(resp.STOCK_QTY[index]);
+                        var qty = type === "1" ? parseFloat(resp.STOCK_QTY[index]) : -parseFloat(resp.STOCK_QTY[index]);
                         var amountSP = type === "1" ? parseFloat(resp.STOCK_COST_SP[index]) : -parseFloat(resp.STOCK_COST_SP[index]);
                         var amountBP = type === "1" ? parseFloat(resp.STOCK_COST_BP[index]) : -parseFloat(resp.STOCK_COST_BP[index]);
                         var profit = parseFloat(resp.PROFIT[index]);
@@ -879,7 +899,7 @@ App.prototype.servicesStockHistory = function () {
                             color = "orange";
                         }
 
-                        var qty = type === "1" ? parseInt(resp.STOCK_QTY[index]) : -parseInt(resp.STOCK_QTY[index]);
+                        var qty = type === "1" ? parseFloat(resp.STOCK_QTY[index]) : -parseFloat(resp.STOCK_QTY[index]);
                         var amountSP = type === "1" ? parseFloat(resp.STOCK_COST_SP[index]) : -parseFloat(resp.STOCK_COST_SP[index]);
                        
                         var span = type === "0" ? "Stock Decrease" : "Stock Increase";
@@ -949,7 +969,7 @@ App.prototype.stockHistory = function () {
                         var totalComm = 0, units = 0;
                         $.each(resp.COMM_VALUE,function(x){
                             totalComm = parseFloat(resp.COMM_VALUE[x]) + totalComm;
-                            units = parseInt(resp.UNITS_SOLD[x]) + units;
+                            units = parseFloat(resp.UNITS_SOLD[x]) + units;
                         });
                         resp.PRODUCT_NAME.push("<b>Totals</b>");
                         resp.UNITS_SOLD.push("<b>"+units+"</b>");
@@ -994,7 +1014,7 @@ App.prototype.stockHistory = function () {
                         var totalTax = 0, units = 0;
                         $.each(resp.TAX_VALUE,function(x){
                             totalTax = parseFloat(resp.TAX_VALUE[x]) + totalTax;
-                            units = parseInt(resp.UNITS_SOLD[x]) + units;
+                            units = parseFloat(resp.UNITS_SOLD[x]) + units;
                         });
                         resp.PRODUCT_NAME.push("<b>Totals</b>");
                         resp.UNITS_SOLD.push("<b>"+units+"</b>");
@@ -1051,7 +1071,7 @@ App.prototype.stockHistory = function () {
                             },
                             transform : {
                                 2 : function(value){
-                                    totalUnits = totalUnits + parseInt(value);  
+                                    totalUnits = totalUnits + parseFloat(value);  
                                     return value;
                                 },
                                 3 : function(value){
@@ -1163,9 +1183,7 @@ App.prototype.createProduct = function () {
     var type = app.appData.formData.login.current_user.business_type;
     var context = type === "goods" ? app.context.product : app.context.service_product;
     var data = app.getFormData(context);
-    
-    if (!data)
-        return;
+    if (!data) return;
     if (type === "services") {
         if(app.getSetting("track_stock") === "0"){
             //dont track
@@ -1179,6 +1197,24 @@ App.prototype.createProduct = function () {
         data.product_expiry_date = {};
         data.product_expiry_date.value = '2015-01-01';
     }
+    
+    //take care of shared products
+    var unitSize = 1;
+    if(data.product_parent.value === data.product_name.value) {
+        alert("Parent product cannot be the same as the product itself");
+        $("#product_parent").focus();
+        return;
+    }
+    else if(data.product_parent.value.trim().length > 0){
+        unitSize = data.product_parent.value.length > 0 ?
+                window.prompt("WARNING!\n Stock deductions for " + data.product_name.value + " will be made on " + data.product_parent.value + "\n Enter the product unit size: ") : 0;
+        if (!unitSize || isNaN(unitSize))
+            return; //this happens if the user pressed cancel
+    }
+    else {
+        $("#product_parent").removeAttr("current-item");
+    }
+  
     var requestData = {
         product_name: data.product_name.value,
         product_quantity: data.product_quantity.value,
@@ -1189,17 +1225,20 @@ App.prototype.createProduct = function () {
         product_reminder_limit: data.product_reminder_limit.value,
         product_expiry_date: data.product_expiry_date.value,
         product_narration: data.product_narration.value,
+        product_unit_size : unitSize,
+        product_parent : $("#product_parent").attr("current-item"),
         tax : data.tax.value,
         commission : data.commission.value,
         business_type: app.appData.formData.login.current_user.business_type
     };
     
-  
     app.xhr(requestData, app.dominant_privilege, "create_product", {
         load: true,
         success: function (data) {
             if (data.response.data === "SUCCESS") {
                 app.showMessage(app.context.create_product);
+                $("#product_parent").val("");
+                $("#product_parent").removeAttr("current-item");
             }
             else if (data.response.data === "FAIL") {
                 app.showMessage(data.response.reason);
@@ -1258,6 +1297,24 @@ App.prototype.updateProduct = function () {
         data.product_expiry_date = {};
         data.product_expiry_date.value = '2015-01-01';
     }
+    
+    //take care of shared products
+    var unitSize = 1;
+    if(data.product_parent.value === data.product_name.value) {
+        alert("Parent product cannot be the same as the product itself");
+        $("#product_parent").focus();
+        return;
+    }
+    else if(data.product_parent.value.trim().length > 0){
+        unitSize = data.product_parent.value.length > 0 ?
+                window.prompt("WARNING!\n Stock deductions for " + data.product_name.value + " will be made on " + data.product_parent.value + "\n Enter the product unit size: ") : 0;
+        if(!unitSize || isNaN(unitSize))
+            return; //this happens if the user pressed cancel
+    }
+    else {
+        $("#product_parent").removeAttr("current-item");
+    }
+    
     var requestData = {
             id: id,
             old_product_name: $("#product_name").attr("old-product-name"),
@@ -1270,6 +1327,8 @@ App.prototype.updateProduct = function () {
             product_reminder_limit: data.product_reminder_limit.value,
             product_expiry_date: data.product_expiry_date.value,
             product_narration: data.product_narration.value,
+            product_unit_size : unitSize,
+            product_parent : $("#product_parent").attr("current-item"),
             tax : data.tax.value,
             commission : data.commission.value,
             business_type: app.appData.formData.login.current_user.business_type
@@ -1280,6 +1339,8 @@ App.prototype.updateProduct = function () {
         success: function (data) {
             if (data.response.data === "SUCCESS") {
                 app.showMessage(app.context.product_updated);
+                $("#product_parent").val("");
+                $("#product_parent").removeAttr("current-item");
             }
             else if (data.response.data === "FAIL") {
                 app.showMessage(data.response.reason);

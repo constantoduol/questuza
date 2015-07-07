@@ -112,7 +112,7 @@ App.prototype.sale = function (data, index) {
     	app.calculateChange();
     	return;
     }
-    var bcolor = parseInt(data.PRODUCT_QTY[index]) < parseInt(data.PRODUCT_REMIND_LIMIT[index]) ? "orange" : "white"; //show color
+    var bcolor = parseFloat(data.PRODUCT_QTY[index]) < parseFloat(data.PRODUCT_REMIND_LIMIT[index]) ? "orange" : "white"; //show color
     var style = bcolor === "orange" ? "background : " + bcolor + ";padding-left :10px;padding-right : 10px;color : white" : "";
     var avail = "<span id=sale_stock_" + id + " style='" + style + "'>" + data.PRODUCT_QTY[index] + "</span>";
     
@@ -244,14 +244,14 @@ App.prototype.todaySales = function () {
                             color = "red";
                             span = "Sale To Customer";
                             app.getSetting("enable_undo_sales") === "1" ? undos.push(undo) : undos.push("");
-                            qty = parseInt(resp.STOCK_QTY[index]);
+                            qty = parseFloat(resp.STOCK_QTY[index]);
                             amount = parseFloat(resp.STOCK_COST_SP[index]);
                         }
                         else if (flag === "reversal_of_sale") {
                             color = "green";
                             span = "Customer Returned Stock ";
                             undos.push("");
-                            qty = -parseInt(resp.STOCK_QTY[index]);
+                            qty = -parseFloat(resp.STOCK_QTY[index]);
                             amount = -parseFloat(resp.STOCK_COST_SP[index]);
                         }
                         else {
@@ -318,7 +318,7 @@ App.prototype.commitSale = function () {
         var elem = elems[x];
         var prodId = elem.getAttribute("id");
         var qty = elem.value.trim() === "" ? 0 : parseInt(elem.value);
-        var availStock = parseInt($("#sale_stock_" + prodId).html());
+        var availStock = parseFloat($("#sale_stock_" + prodId).html());
         if (qty <= 0) {
             app.showMessage(app.context.invalid_qty);
             elem.focus();

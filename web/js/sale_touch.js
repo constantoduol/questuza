@@ -95,7 +95,8 @@ App.prototype.loadProducts = function(category,sub_category){
     app.xhr(request,app.dominant_privilege,"load_products",{
         load : false,
         success : function(resp){
-            var p = resp.response.data;
+            var p = resp.response.data.categorized_products;
+            var a = resp.response.data.all_products;
             //show the relevant buttons
             $("#commit_link").css("visibility", "visible");
             $("#total_qty").css("visibility", "visible");
@@ -103,7 +104,6 @@ App.prototype.loadProducts = function(category,sub_category){
             $("#clear_sale_link").css("visibility", "visible");
             $("#category_area").html("");
             $("#product_display_area").html("");
-            var img = "<img src='img/cancel.png' style='height:30px;background:red'>";
             app.ui.table({
                 id_to_append: "product_display_area",
                 headers: ["Name", "Price","Quantity Available"],
@@ -172,7 +172,6 @@ App.prototype.loadProducts = function(category,sub_category){
                           td.append(img);
                           tr.append(td);
                           saleArea.append(tr);
-                          
                       }
                       else {
                         var currQty = parseInt($("#qty_"+id).html());
@@ -191,6 +190,10 @@ App.prototype.loadProducts = function(category,sub_category){
                     },
                     2 : function(value,index){
                         var id = p.ID[index];
+                        var parentId = p.PRODUCT_PARENT[index].trim();
+                        if(parentId.length > 0){
+                           value = a.PRODUCT_QTY[a.ID.indexOf(parentId)]; 
+                        }
                         return "<span id='stock_"+id+"'>"+value+"</span>";
                     }
                 }
@@ -231,7 +234,7 @@ App.prototype.commitSale = function () {
         var qtyElemId = qtyElem.attr("id");
         var prodId = qtyElemId.substring(4,qtyElemId.length);
         var qty = qtyElem.html().trim() === "" ? 0 : parseInt(qtyElem.html());
-        var availStock = parseInt($("#stock_" + prodId).html());
+        var availStock = parseFloat($("#stock_" + prodId).html());
         var trackStock = !app.getSetting("track_stock") ? "1" : app.getSetting("track_stock"); 
         if (qty <= 0) {
             app.showMessage(app.context.invalid_qty);
@@ -304,7 +307,7 @@ App.prototype.generateReceipt = function () {
     var $frame = $("#receipt_area");
     var doc = $frame[0].contentWindow.document;
     var $body = $('body', doc);
-    $body.html("<div id='receipt_iframe_area'></div>");
+    $body.html("<div id='receipt_iframe_area' style='font-size:20px'></div>");
     $("#receipt_area_dummy").html("");
     var recArea = $("#receipt_iframe_area", doc);
     var elems = $(".qtys");
@@ -330,12 +333,11 @@ App.prototype.generateReceipt = function () {
         totalQty = totalQty + qty;
     });
     
-    var recHeaders = ["Product", "Price", "Qty", "S/Total"];
-    var recValues = [names, amounts, qtys, subs];
+    var recHeaders = ["Product", "Qty", "S/Total"];
+    var recValues = [names,qtys, subs];
     recValues[0].push("<b>Totals</b>");
-    recValues[1].push("");
-    recValues[2].push("<b>" + totalQty + "</b>");
-    recValues[3].push("<b>" + app.formatMoney(totalCost) + "</b>");
+    recValues[1].push("<b>" + totalQty + "</b>");
+    recValues[2].push("<b>" + app.formatMoney(totalCost) + "</b>");
     var bName = localStorage.getItem("business_name");
     var header = "<div><h3>" + bName + "</h3></div>";
     var receiptHeader = app.getBusinessExtra(0);
@@ -345,7 +347,8 @@ App.prototype.generateReceipt = function () {
     app.ui.table({
         id_to_append: "receipt_area_dummy",
         headers: recHeaders,
-        values: recValues
+        values: recValues,
+        style : "font-size:20px"
     });
     var username = localStorage.getItem("current_user");
     var footer = "<div><span>Date : " + new Date().toLocaleString() + "</span><br/><span>Served by: " + username + "</span></div>";
@@ -395,14 +398,14 @@ App.prototype.todaySales = function () {
                             color = "red";
                             span = "Sale To Customer";
                             app.getSetting("enable_undo_sales") === "1" ? undos.push(undo) : undos.push("");
-                            qty = parseInt(resp.STOCK_QTY[index]);
+                            qty = parseFloat(resp.STOCK_QTY[index]);
                             amount = parseFloat(resp.STOCK_COST_SP[index]);
                         }
                         else if (flag === "reversal_of_sale") {
                             color = "green";
                             span = "Customer Returned Stock ";
                             undos.push("");
-                            qty = -parseInt(resp.STOCK_QTY[index]);
+                            qty = -parseFloat(resp.STOCK_QTY[index]);
                             amount = -parseFloat(resp.STOCK_COST_SP[index]);
                         }
                         else {

@@ -1,8 +1,11 @@
 <div class="card" id="products_card">
     <h3>Products</h3>
     <div class="input-group">
-        <input type="text" class="form-control" id="search_products" placeholder="Search Products">
-        <div class="input-group-addon search" id="search_link"><img src="img/search.png" alt="Search Products" ></div>
+        <input type="text" class="form-control" id="search_products" placeholder="Search Products" style="width: 80%">
+        <select id="product_categories" style="width: 20%"></select>
+        <div class="input-group-addon search" id="search_link">
+            <img src="img/search.png" alt="Search Products" > 
+        </div>
     </div>
     
     <div id="error_space_admin" class="error" ></div>
@@ -33,9 +36,11 @@
         <label for="product_expiry_date">Product Expiry Date</label>
         <input type="date" class="form-control" id="product_expiry_date" placeholder="Product Expiry Date" readonly="readonly">
         
-
         <label for="product_narration">Product Narration</label>
         <input type="text" class="form-control" id="product_narration" placeholder="Product Narration">
+        
+        <label for="product_parent">Parent Product</label>
+        <input type="text" class="form-control" id="product_parent" placeholder="Parent Product">
 
         <label for="tax">Tax Percentage</label>
         <input type="number" class="form-control" id="tax" placeholder="Tax Percentage" value="0">
