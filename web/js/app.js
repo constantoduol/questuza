@@ -215,7 +215,6 @@ App.prototype.paginate = function (options) {
         load_url: app.pages.paginate,
         load_area: "content_area",
         onload: function () {
-            $("#help_icon_always").remove();
             $("#paginate_title").html(options.title);
             $("#paginate_print").click(function () {
                 app.print({
@@ -250,7 +249,7 @@ App.prototype.paginate = function (options) {
                     app.savedState = "";
                     var onload = app.appData.formData.onload[options.onload_handler];
                     var always = app.appData.formData.onload.always;
-                    if (onload) { //invoke the onload handlers e.g sale.html
+                    if (onload) { //invoke the onload handlers e.g app.pages.sale
                         always();
                         onload();
                     }

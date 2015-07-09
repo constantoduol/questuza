@@ -275,6 +275,7 @@ form {
   text-align: center;
   font-size: 40px;
   cursor: pointer;
+  -webkit-user-select: none;
 }
 
 .key:hover {

@@ -110,6 +110,7 @@ App.prototype.login = function () {
 App.prototype.navigate = function (privileges, buss) {
     var adminIndex = privileges.indexOf("pos_admin_service");
     var saleIndex = privileges.indexOf("pos_sale_service");
+    var interIndex = privileges.indexOf("pos_middle_service");
     var saleUrl = app.getSetting("user_interface") === "touch" ? "sale_touch.html" : "sale.html";
     //if you have more than one business id, navigate to the correct one
     if (adminIndex > -1 && saleIndex > -1) {
@@ -140,7 +141,7 @@ App.prototype.navigate = function (privileges, buss) {
         //you're only an admin
         app.navigateBusiness(buss, "admin.html");
     }
-    else if (saleIndex > -1) {
+    else if (saleIndex > -1 || interIndex > -1) {
         //you're a salesperson 
         app.navigateBusiness(buss,saleUrl);
     }

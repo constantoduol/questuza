@@ -10,7 +10,7 @@ function AppData() {
         var path = window.location.pathname;
         app.appData.formData.onload.once();
         app.appData.formData.onload.always();
-        app.skippable_pages = [app.pages.paginate,app.pages.account,"/help/"];
+        app.skippable_pages = [app.pages.paginate, app.pages.account, "/help/"];
         app.ignoreIrrelevantPaths(path);
         if (app.appData.formData.onload[path]) {
             app.appData.formData.onload[path]();
@@ -20,11 +20,12 @@ function AppData() {
 
 AppData.prototype.formData = {
     onload: {
-        once : function(){
+        once: function () {
             //run once when the app loads
             //always enable modal windows
             var modalArea = $("<div id='modal_area'></div>");
-            if(!$("#modal_area")[0])  $("body").append(modalArea);
+            if (!$("#modal_area")[0])
+                $("body").append(modalArea);
 
             //setup the pages
             var bType = app.appData.formData.login.current_user.business_type;
@@ -54,7 +55,7 @@ AppData.prototype.formData = {
             app.appData.formData.onload.setupAccount();
 
         },
-        setupAccount : function(){
+        setupAccount: function () {
             //always shorten the username
             var user = app.appData.formData.login.current_user.name;
             var shortUser;
@@ -62,17 +63,17 @@ AppData.prototype.formData = {
                 shortUser = user.substring(0, 20) + "..."; //no overlong usernames
             }
             else {
-               shortUser = user;
+                shortUser = user;
             }
-            
+
             //setup account details
             var logoutLink = $("#logout_link");
             logoutLink.html(shortUser);
             logoutLink.unbind("click");
-            logoutLink.click(function(){
-                var m = app.ui.modal("","User Account",{
-                    cancelText : "Cancel",
-                    cancel : function(){
+            logoutLink.click(function () {
+                var m = app.ui.modal("", "User Account", {
+                    cancelText: "Cancel",
+                    cancel: function () {
                         m.modal('hide');
                     }
                 });
@@ -83,31 +84,31 @@ AppData.prototype.formData = {
                         $("#sign_out_link").click(app.logout);
                         $("#about_link").click(app.brand);
                         $("#activate_link").click(app.activateProduct);
-                        $("#help_link").click(function(){
+                        $("#help_link").click(function () {
                             app.paginate({
                                 title: "Help",
                                 save_state: true,
                                 save_state_area: "content_area",
-                                onload_handler : app.currentPage(),
-                                onload : function(){
+                                onload_handler: app.currentPage(),
+                                onload: function () {
                                     m.modal('hide');
                                     app.loadPage({
-                                        load_url : app.sub_context.help_url,
+                                        load_url: app.sub_context.help_url,
                                         load_area: "paginate_body"
                                     });
                                 }
                             });
                         });
-                        
-                        $("#change_password_link").click(function(){
-                            window.location = "/change.html?user_name="+user;
+
+                        $("#change_password_link").click(function () {
+                            window.location = "/change.html?user_name=" + user;
                         });
-                   
+
                     }
                 });
             });
         },
-        "/index.html" : function(){
+        "/index.html": function () {
             app.context = app.appData.formData.login;
             app.xhr({}, "open_data_service", "fetch_settings", {
                 load: false,
@@ -115,17 +116,17 @@ AppData.prototype.formData = {
                     var r = resp.response.data;
                     localStorage.setItem("settings", JSON.stringify(r));
                     var userInterface = app.getSetting("user_interface");
-                    if(userInterface === "touch"){
+                    if (userInterface === "touch") {
                         window.location = "index_touch.html";
                     }
                 }
             });
         },
-        "/" : function(){
+        "/": function () {
             this["/index.html"]();
         },
-        "/index_touch.html" : function(){
-            app.keyPad("keypad","password");
+        "/index_touch.html": function () {
+            app.keyPad("keypad", "password");
             app.context = app.appData.formData.login_touch;
             $("#password").val("");
             $("#password").focus();
@@ -143,20 +144,20 @@ AppData.prototype.formData = {
                 $("#paginate_print").remove();
             }
         },
-        "/sale_touch.html" : function(){
+        "/sale_touch.html": function () {
             app.context = app.appData.formData.sale_touch;
             app.sub_context = app.appData.formData.sale_touch.product;
             $("#product_display_area").html("");
             $("#category_area").html("");
-            app.loadCategories("category_area","category");
-            $("#home_link").click(function(){
-               $("#category_area").html("");
-               $("#product_display_area").html("");
-               app.loadCategories("category_area","category"); 
+            app.loadCategories("category_area", "category");
+            $("#home_link").click(function () {
+                $("#category_area").html("");
+                $("#product_display_area").html("");
+                app.loadCategories("category_area", "category");
             });
-            
-             $("#clear_sale_link").click(function(){
-                 $("#category_area").html("");
+
+            $("#clear_sale_link").click(function () {
+                $("#category_area").html("");
                 $("#product_display_area").html("");
                 $("#current_sale_card").html("");
                 $("#commit_link").css("visibility", "hidden");
@@ -165,17 +166,43 @@ AppData.prototype.formData = {
                 $("#clear_sale_link").css("visibility", "hidden");
                 $("#total_qty").html("0");
                 $("#total_amount").html("0.00");
-                app.loadCategories("category_area", "category"); 
+                app.loadCategories("category_area", "category");
             });
-            
+
             $("#commit_link").click(app.commitSale);
-            
-            $("#todays_sale_link").click(app.todaySales);
-            
-            
+            $("#todays_sale_link").click(function () {
+                app.todaySales(app.appData.formData.login_touch.current_user.name);
+            });
             $("#logout_link").unbind("click");
             $("#logout_link").click(app.logout);
-            
+
+            if (app.dominant_privilege === "pos_middle_service") {
+                $("#users_report_link").css("visibility", "visible");
+                $("#users_report_link").click(function () {
+                    var select = "<label for='user_select'>Select User</label>\n\
+                                    <select id='user_select'><option value='all'>All</select>";
+                    var m = app.ui.modal(select,"Generate Report",{
+                        okText : "Generate",
+                        ok : function(){
+                            app.todaySales($("#user_select").val());
+                            m.modal('hide');
+                        }
+                    });
+                    app.xhr({}, app.dominant_privilege, "all_users", {
+                        load: false,
+                        success: function (data) {
+                            var userResp = data.response.data;
+                            $.each(userResp.USER_NAME, function (index) {
+                                var name = userResp.USER_NAME[index];
+                                $("#user_select").append($("<option value=" + name + ">" + name + "</option>"));
+                            });
+                            app.runLater(200,function(){
+                                 $("#modal_area_button_ok").focus();
+                            });
+                        }
+                    });
+                });
+            }
             if (app.platform === "web") {
                 if (!$("#receipt_area")[0]) {
                     $("body").append("<iframe id='receipt_area' name='receipt_area' style='width:0px;height:0px'></iframe>");
@@ -206,26 +233,26 @@ AppData.prototype.formData = {
             $("#stock_low_btn").click(function () {
                 app.stockLow(app.pages.sale);
             });
-            
+
             //bind shortcuts for the sales person
-            $(document).bind('keyup', 'Shift+return', function(){
+            $(document).bind('keyup', 'Shift+return', function () {
                 app.commitSale();
             });
-            $(document).bind('keyup', 'Shift+c', function(){
+            $(document).bind('keyup', 'Shift+c', function () {
                 app.clearSale();
             });
-             $(document).bind('keyup', 'Shift+f', function(){
+            $(document).bind('keyup', 'Shift+f', function () {
                 $("#search_products").val("");
                 $("#search_products").focus();
-             });
-              $("#commit_sale_btn").bind('keyup', 'Shift+f', function(){
+            });
+            $("#commit_sale_btn").bind('keyup', 'Shift+f', function () {
                 $("#search_products").val("");
                 $("#search_products").focus();
-             });
-              $("#commit_sale_btn").bind('keyup', 'Shift+c', function(){
-                  app.clearSale();
-             });
-            
+            });
+            $("#commit_sale_btn").bind('keyup', 'Shift+c', function () {
+                app.clearSale();
+            });
+
             //$("#logout_link").click(app.logout);
             var bType = app.appData.formData.login.current_user.business_type;
             if (bType === "services") {
@@ -233,8 +260,8 @@ AppData.prototype.formData = {
                 $("#stock_expiry_btn").remove();
             }
             ////////-----print receipt stuff
-            if(app.platform === "web"){
-                if(!$("#receipt_area")[0]) {
+            if (app.platform === "web") {
+                if (!$("#receipt_area")[0]) {
                     $("body").append("<iframe id='receipt_area' name='receipt_area' style='width:0px;height:0px'></iframe>");
                     $("body").append("<div id='receipt_area_dummy' style='display:none'></div>");
                     var cssLink = document.createElement("link")
@@ -284,17 +311,17 @@ AppData.prototype.formData = {
             $("#add_category_btn").click(app.addProductCategory);
             $("#search_link").click(app.allUsers);
             app.setUpAuto(app.context.user.fields.search_users);
-            app.xhr({category_type : "category"},app.dominant_privilege,"product_categories",{
-                load : false,
-                success : function(resp){
+            app.xhr({category_type: "category"}, app.dominant_privilege, "product_categories", {
+                load: false,
+                success: function (resp) {
                     var r = resp.response.data.PRODUCT_CATEGORY;
                     $.each(r, function (index) {
                         var cat = r[index];
                         $("#product_categories").append($("<option value=" + cat + ">" + cat + "</option>"));
-                    }); 
+                    });
                 }
             });
-          
+
         },
         "/views/product.html": function () {
             app.sub_context = app.context.product;
@@ -310,16 +337,16 @@ AppData.prototype.formData = {
             app.setUpAuto(app.context.product.fields.product_sub_category);
             app.setUpAuto(app.context.product.fields.product_parent);
             app.setUpDate("product_expiry_date", true); //has limit
-            app.xhr({category_type : "category"},app.dominant_privilege,"product_categories",{
-                load : false,
-                success : function(resp){
+            app.xhr({category_type: "category"}, app.dominant_privilege, "product_categories", {
+                load: false,
+                success: function (resp) {
                     var r = resp.response.data.PRODUCT_CATEGORY;
                     $("#product_categories").html("");
                     $("#product_categories").append($("<option value='all'>All</option>"));
                     $.each(r, function (index) {
                         var cat = r[index];
                         $("#product_categories").append($("<option value=" + cat + ">" + cat + "</option>"));
-                    }); 
+                    });
                 }
             });
         },
@@ -336,7 +363,7 @@ AppData.prototype.formData = {
             app.setUpAuto(app.context.service_product.fields.product_category);
             app.setUpAuto(app.context.service_product.fields.product_sub_category);
             app.setUpAuto(app.context.service_product.fields.product_parent);
-            if(localStorage.getItem("track_stock") === "0" ){
+            if (localStorage.getItem("track_stock") === "0") {
                 $("#product_quantity").remove();
                 $("#product_quantity_label").remove();
             }
@@ -353,7 +380,7 @@ AppData.prototype.formData = {
                 }
             });
         },
-        "/views/supplier_select.html" : function(){
+        "/views/supplier_select.html": function () {
             app.setUpAuto(app.context.suppliers.fields.search_suppliers);
         },
         "/views/suppliers.html": function () {
@@ -387,9 +414,9 @@ AppData.prototype.formData = {
             $("#delete_business_btn").click(function () {
                 app.saveBusiness("delete");
             });
-            
+
             $("#settings_business_btn").click(app.settings);
-            
+
             $("#country").html("");
             $.each(app.nations, function (index) {
                 var nation = app.nations[index];
@@ -436,17 +463,17 @@ AppData.prototype.formData = {
             $("#search_link").click(function () {
                 app.allProducts(app.pages.stock_history);
             });
-            
-            $("#report_type").change(function(){
-               var report = $("#report_type").val();
-               if(report === "supplier_history"){
-                  $("#stock_select_suppliers_div").css("display","block"); 
-               }
-               else {
-                  $("#stock_select_suppliers_div").css("display","none");   
-               }
+
+            $("#report_type").change(function () {
+                var report = $("#report_type").val();
+                if (report === "supplier_history") {
+                    $("#stock_select_suppliers_div").css("display", "block");
+                }
+                else {
+                    $("#stock_select_suppliers_div").css("display", "none");
+                }
             });
-            
+
             app.setUpDate("start_date"); //no limit
             app.setUpDate("end_date"); //no limit
             app.setUpAuto(app.context.stock_history.fields.search_products);
@@ -455,24 +482,26 @@ AppData.prototype.formData = {
                 $("#stock_low_btn").remove();
                 $("#stock_expiry_btn").remove();
             }
-            
+
             $.each(app.times, function (index) {
                 var time = app.times[index];
                 $("#start_time").append($("<option value=" + time + ">" + time + "</option>"));
                 $("#stop_time").append($("<option value=" + time + ">" + time + "</option>"));
             });
             //load all users
-            app.xhr({}, "pos_admin_service,pos_admin_service", "all_users,all_suppliers", {
+            app.xhr({}, "" + app.dominant_privilege + "," + app.dominant_privilege + "", "all_users,all_suppliers", {
                 load: false,
                 success: function (data) {
-                    var userResp = data.response.pos_admin_service_all_users.data;
-                    var supResp = data.response.pos_admin_service_all_suppliers.data;
+                    var key = app.dominant_privilege + "_all_users";
+                    var key1 = app.dominant_privilege + "_all_suppliers";
+                    var userResp = data.response[key].data;
+                    var supResp = data.response[key1].data;
                     $("#stock_select_users").html("<option value='all'>All</option>");
                     $.each(userResp.USER_NAME, function (index) {
                         var name = userResp.USER_NAME[index];
                         $("#stock_select_users").append($("<option value=" + name + ">" + name + "</option>"));
                     });
-                    
+
                     $("#stock_select_suppliers").html("<option value='all'>All</option>");
                     $.each(supResp.SUPPLIER_NAME, function (index) {
                         var name = supResp.SUPPLIER_NAME[index];
@@ -506,6 +535,9 @@ AppData.prototype.formData = {
                 else if (privs && privs.indexOf("pos_sale_service") > -1) {
                     return "pos_sale_service";
                 }
+                else if (privs && privs.indexOf("pos_middle_service") > -1) {
+                    return "pos_middle_service";
+                }
             }
         },
         messages: {
@@ -514,7 +546,7 @@ AppData.prototype.formData = {
             disabled: "User account has been disabled"
         }
     },
-    login_touch : {
+    login_touch: {
         fields: {
             password: {required: true, message: "PIN is required"},
             username: {required: false}//dLhkCJaBox2jIDpJKfHzsIxV1SGiNqWNh+ZWDtYrZDBgaweQQExDLcn66d0mExrECCtwnzT+l/fky7OR2Qr6iw==
@@ -536,6 +568,9 @@ AppData.prototype.formData = {
                 }
                 else if (privs && privs.indexOf("pos_sale_service") > -1) {
                     return "pos_sale_service";
+                }
+                else if (privs && privs.indexOf("pos_middle_service") > -1) {
+                    return "pos_middle_service";
                 }
             }
         },
@@ -579,9 +614,8 @@ AppData.prototype.formData = {
     sale_touch: {
         product: {
             fields: {
-                
             },
-            help_url : "/help/sale.html"
+            help_url: "/help/sale.html"
         },
         error_space: "error_space_sale",
         load_area: "error_space_sale",
@@ -614,12 +648,12 @@ AppData.prototype.formData = {
                         selected: [],
                         after: function (data, index) {
                             app.sale(data, index);
-                            $("#commit_sale_btn").focus(); 
-                            
+                            $("#commit_sale_btn").focus();
+
                         }
                     }}
             },
-            help_url : "/help/sale.html"
+            help_url: "/help/sale.html"
         },
         error_space: "error_space_sale",
         load_area: "error_space_sale",
@@ -675,7 +709,7 @@ AppData.prototype.formData = {
                 user_role: {required: true, message: "User role is required"},
                 real_name: {required: false}
             },
-            help_url : "/help/user.html"
+            help_url: "/help/user.html"
         },
         service_product: {
             fields: {
@@ -699,7 +733,7 @@ AppData.prototype.formData = {
                         }
                     },
                     autocomplete_handler: {
-                        fields : {
+                        fields: {
                             product_name: "PRODUCT_NAME",
                             product_category: "PRODUCT_CATEGORY",
                             product_sub_category: "PRODUCT_SUB_CATEGORY",
@@ -709,10 +743,10 @@ AppData.prototype.formData = {
                             tax: "TAX",
                             commission: "COMMISSION"
                         }
-                       
+
                     }
                 },
-                product_quantity: {required: false, sign : "+"},
+                product_quantity: {required: false, sign: "+"},
                 product_name: {required: true, message: "Product name is required"},
                 product_category: {
                     required: false,
@@ -749,7 +783,7 @@ AppData.prototype.formData = {
                     }
                 },
                 product_parent: {
-                    required : false,
+                    required: false,
                     autocomplete: {
                         id: "product_parent",
                         database: "pos_data",
@@ -769,12 +803,12 @@ AppData.prototype.formData = {
                         }
                     }
                 },
-                product_sp_unit_cost: {required: true, message: "Product selling price per unit is required", sign : "+"},
+                product_sp_unit_cost: {required: true, message: "Product selling price per unit is required", sign: "+"},
                 product_narration: {required: false},
-                tax : {required:false, sign : "+"},
-                commission : {required:false, sign : "+"}
+                tax: {required: false, sign: "+"},
+                commission: {required: false, sign: "+"}
             },
-            help_url : "/help/service_product.html"
+            help_url: "/help/service_product.html"
         },
         product: {
             fields: {
@@ -798,7 +832,7 @@ AppData.prototype.formData = {
                         }
                     },
                     autocomplete_handler: {
-                        fields : {
+                        fields: {
                             product_name: "PRODUCT_NAME",
                             product_quantity: "PRODUCT_QTY",
                             product_category: "PRODUCT_CATEGORY",
@@ -811,19 +845,19 @@ AppData.prototype.formData = {
                             tax: "TAX",
                             commission: "COMMISSION"
                         },
-                        after : function(data,index){
+                        after: function (data, index) {
                             var parentId = data.PRODUCT_PARENT[index];
                             console.log(parentId);
-                            $("#product_parent").attr("current-item",parentId);
+                            $("#product_parent").attr("current-item", parentId);
                             app.fetchItemById({
-                                database : "pos_data",
-                                table : "PRODUCT_DATA",
-                                column : "*",
-                                where : function(){
-                                   var id = app.appData.formData.login.current_user.business_id;
-                                   return "ID = '"+parentId+"' AND BUSINESS_ID = '" + id + "'";
+                                database: "pos_data",
+                                table: "PRODUCT_DATA",
+                                column: "*",
+                                where: function () {
+                                    var id = app.appData.formData.login.current_user.business_id;
+                                    return "ID = '" + parentId + "' AND BUSINESS_ID = '" + id + "'";
                                 },
-                                success : function(data){
+                                success: function (data) {
                                     var r = data.response.data;
                                     $("#product_parent").val(r.PRODUCT_NAME[0]);
                                 }
@@ -832,7 +866,7 @@ AppData.prototype.formData = {
                     }
                 },
                 product_name: {required: true, message: "Product name is required"},
-                product_quantity: {required: true, message: "Product quantity is required", sign : "+"},
+                product_quantity: {required: true, message: "Product quantity is required", sign: "+"},
                 product_category: {
                     required: false,
                     autocomplete: {
@@ -868,7 +902,7 @@ AppData.prototype.formData = {
                     }
                 },
                 product_parent: {
-                    required : false,
+                    required: false,
                     autocomplete: {
                         id: "product_parent",
                         database: "pos_data",
@@ -888,15 +922,15 @@ AppData.prototype.formData = {
                         }
                     }
                 },
-                product_bp_unit_cost: {required: true, message: "Product buying price per unit is required", sign : "+"},
-                product_sp_unit_cost: {required: true, message: "Product selling price per unit is required", sign : "+"},
-                product_reminder_limit: {required: true, message: "Product reminder limit is required", sign : "+"},
+                product_bp_unit_cost: {required: true, message: "Product buying price per unit is required", sign: "+"},
+                product_sp_unit_cost: {required: true, message: "Product selling price per unit is required", sign: "+"},
+                product_reminder_limit: {required: true, message: "Product reminder limit is required", sign: "+"},
                 product_expiry_date: {required: true, message: "Product expiry date required"},
                 product_narration: {required: false},
-                tax : {required:false, sign : "+"},
-                commission : {required:false, sign : "+"}
+                tax: {required: false, sign: "+"},
+                commission: {required: false, sign: "+"}
             },
-            help_url : "/help/product.html"
+            help_url: "/help/product.html"
         },
         suppliers: {
             fields: {
@@ -920,7 +954,7 @@ AppData.prototype.formData = {
                         }
                     },
                     autocomplete_handler: {
-                        fields : {
+                        fields: {
                             supplier_name: "SUPPLIER_NAME",
                             phone_number: "PHONE_NUMBER",
                             email_address: "EMAIL_ADDRESS",
@@ -940,28 +974,28 @@ AppData.prototype.formData = {
                 company_website: {required: false},
                 contact_person_name: {required: false},
                 contact_person_phone: {required: false},
-                city : {required:false},
-                country : {required:false}
+                city: {required: false},
+                country: {required: false}
             },
-            help_url : "/help/suppliers.html"
+            help_url: "/help/suppliers.html"
         },
-        supplier_account : {
-            fields : {
-                entry_type : {required : true,message : "Entry type is required"},
-                amount : {required : true,message : "Amount is required", sign : "+"},
-                units_received : {required : true,message : "Units received is required",sign : "+"},
-                sp_per_unit : {required : true,message : "Selling price per unit is required",sign : "+"},
-                narration : {required : true,message : "Narration is required"}
+        supplier_account: {
+            fields: {
+                entry_type: {required: true, message: "Entry type is required"},
+                amount: {required: true, message: "Amount is required", sign: "+"},
+                units_received: {required: true, message: "Units received is required", sign: "+"},
+                sp_per_unit: {required: true, message: "Selling price per unit is required", sign: "+"},
+                narration: {required: true, message: "Narration is required"}
             }
         },
-       settings : {
-            fields : {
-                enable_undo_sales : {required : true},
-                add_tax : {required : true},
-                add_comm : {required : true},
-                add_purchases : {required : true},
-                track_stock : {required : true},
-                user_interface : {required : false}
+        settings: {
+            fields: {
+                enable_undo_sales: {required: true},
+                add_tax: {required: true},
+                add_comm: {required: true},
+                add_purchases: {required: true},
+                track_stock: {required: true},
+                user_interface: {required: false}
             }
         },
         stock_history: {
@@ -987,13 +1021,13 @@ AppData.prototype.formData = {
                     }
                 }
             },
-            help_url : "/help/stock_history.html"
+            help_url: "/help/stock_history.html"
         },
         expense: {
             fields: {
                 resource_type: {required: true, message: "Resource type is required"},
                 expense_name: {
-                    required: true, 
+                    required: true,
                     message: "Expense/Income name is required",
                     autocomplete: {
                         id: "expense_name",
@@ -1002,28 +1036,28 @@ AppData.prototype.formData = {
                         column: "RESOURCE_NAME",
                         where: function () {
                             var id = app.appData.formData.login.current_user.business_id;
-                            return "RESOURCE_NAME  LIKE '" + $("#expense_name").val() + "%'"+
-                                    " AND BUSINESS_ID = '" + id + "' AND RESOURCE_TYPE='"+$("#resource_type").val()+"'";
+                            return "RESOURCE_NAME  LIKE '" + $("#expense_name").val() + "%'" +
+                                    " AND BUSINESS_ID = '" + id + "' AND RESOURCE_TYPE='" + $("#resource_type").val() + "'";
                         },
                         orderby: "RESOURCE_NAME ASC",
                         limit: 10,
                         key: "RESOURCE_NAME",
                         data: {},
                         after: function (data, index) {
-                          console.log(data); 
+                            console.log(data);
                         }
                     }
                 },
-                expense_amount: {required: true, message: "Expense/Income amount is required", sign : "+"}
+                expense_amount: {required: true, message: "Expense/Income amount is required", sign: "+"}
             },
-            help_url : "/help/expenses.html"
+            help_url: "/help/expenses.html"
         },
         profit_and_loss: {
             fields: {
                 start_date: {required: true, message: "Start date is required"},
                 end_date: {required: true, message: "End date is required"}
             },
-            help_url : "/help/profit_and_loss.html"
+            help_url: "/help/profit_and_loss.html"
         },
         business: {
             fields: {
@@ -1036,7 +1070,7 @@ AppData.prototype.formData = {
                 business_type: {required: true, message: "Business type is required"},
                 business_extra_data: {required: false}
             },
-            help_url : "/help/business.html"
+            help_url: "/help/business.html"
         },
         error_space: "error_space_admin",
         load_area: "error_space_admin",
@@ -1051,13 +1085,13 @@ AppData.prototype.formData = {
         enable_user: "The user account was enabled successfully",
         enable_user_confirm: "Enable user account?",
         create_product: "Product created successfully",
-        create_supplier : "Supplier created successfully",
-        update_supplier : "Supplier updated successfully",
-        delete_supplier : "Supplier deleted successfully",
+        create_supplier: "Supplier created successfully",
+        update_supplier: "Supplier updated successfully",
+        delete_supplier: "Supplier deleted successfully",
         no_product_selected: "You have not selected any product, search to select",
-        no_supplier_selected : "You have not selected any supplier, search to select",
-        supplier_added : "Supplier was added successfully",
-        supplier_deleted : "Supplier was deleted successfully",
+        no_supplier_selected: "You have not selected any supplier, search to select",
+        supplier_added: "Supplier was added successfully",
+        supplier_deleted: "Supplier was deleted successfully",
         product_updated: "Product updated successfully",
         product_deleted: "Product deleted successfully",
         invalid_dates: "End date cannot be less than starting date",
@@ -1069,6 +1103,6 @@ AppData.prototype.formData = {
         business_delete_confirm: "Delete business? You will lose all records for this business",
         business_deleted_success: "Business deleted successfully",
         resource_success: "{resource_type} was added successfully",
-        supplier_transact : "Transaction was successful"
+        supplier_transact: "Transaction was successful"
     }
 };

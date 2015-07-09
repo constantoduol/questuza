@@ -514,7 +514,7 @@ public class PosAdminService implements Serviceable {
         serv.messageToClient(worker);
     }
 
-    @Endpoint(name = "all_products", shareMethodWith = {"pos_sale_service"})
+    @Endpoint(name = "all_products", shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void allProducts(Server serv, ClientWorker worker) {
         Database db = new Database(POS_DATA, worker.getSession());
         JSONObject requestData = worker.getRequestData();
@@ -536,7 +536,7 @@ public class PosAdminService implements Serviceable {
         serv.messageToClient(worker);
     }
 
-    @Endpoint(name = "all_suppliers")
+    @Endpoint(name = "all_suppliers",shareMethodWith = {"pos_middle_service"})
     public void allSuppliers(Server serv, ClientWorker worker) {
         Database db = new Database(POS_DATA, worker.getSession());
         JSONObject requestData = worker.getRequestData();
@@ -551,7 +551,7 @@ public class PosAdminService implements Serviceable {
         serv.messageToClient(worker);
     }
 
-    @Endpoint(name = "all_users", shareMethodWith = {"pos_sale_service"})
+    @Endpoint(name = "all_users", shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void allUsers(Server serv, ClientWorker worker) throws NonExistentDatabaseException {
         JSONObject requestData = worker.getRequestData();
         String busId = requestData.optString("business_id");
@@ -561,7 +561,7 @@ public class PosAdminService implements Serviceable {
         serv.messageToClient(worker);
     }
 
-    @Endpoint(name = "auto_complete", shareMethodWith = {"pos_sale_service"})
+    @Endpoint(name = "auto_complete", shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void autoComplete(Server serv, ClientWorker worker) {
         try {
             JSONObject requestData = worker.getRequestData();
@@ -603,7 +603,7 @@ public class PosAdminService implements Serviceable {
 
     }
 
-    @Endpoint(name = "stock_history", shareMethodWith = {"pos_sale_service"})
+    @Endpoint(name = "stock_history", shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void openStockHistory(Server serv, ClientWorker worker) {
         JSONObject requestData = worker.getRequestData();
         String action = requestData.optString("report_type");
@@ -895,7 +895,7 @@ public class PosAdminService implements Serviceable {
         return total;
     }
 
-    @Endpoint(name = "stock_expiry", shareMethodWith = {"pos_sale_service"})
+    @Endpoint(name = "stock_expiry", shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void stockExpiry(Server serv, ClientWorker worker) {
         Database db = new Database(POS_DATA, worker.getSession());
         JSONObject requestData = worker.getRequestData();
@@ -910,7 +910,7 @@ public class PosAdminService implements Serviceable {
         serv.messageToClient(worker);
     }
 
-    @Endpoint(name = "stock_low", shareMethodWith = {"pos_sale_service"})
+    @Endpoint(name = "stock_low", shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void stockLow(Server serv, ClientWorker worker) {
         Database db = new Database(POS_DATA, worker.getSession());
         JSONObject requestData = worker.getRequestData();
@@ -947,7 +947,7 @@ public class PosAdminService implements Serviceable {
         serv.messageToClient(worker);
     }
     
-    @Endpoint(name="product_categories",shareMethodWith = {"pos_sale_service"})
+    @Endpoint(name="product_categories",shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void loadCategories(Server serv,ClientWorker worker){
         Database db = new Database(POS_DATA, worker.getSession());
         JSONObject requestData = worker.getRequestData();
@@ -964,7 +964,7 @@ public class PosAdminService implements Serviceable {
         serv.messageToClient(worker);
     }
     
-    @Endpoint(name="load_products",shareMethodWith = {"pos_sale_service"})
+    @Endpoint(name="load_products",shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void loadProducts(Server serv,ClientWorker worker) throws JSONException{
         Database db = new Database(POS_DATA, worker.getSession());
         JSONObject requestData = worker.getRequestData();
@@ -1028,7 +1028,7 @@ public class PosAdminService implements Serviceable {
         
     }
     
-    @Endpoint(name="fetch_categories",shareMethodWith = {"pos_sale_service"})
+    @Endpoint(name="fetch_categories",shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void fetchCategories(Server serv,ClientWorker worker){
         Database db = new Database(POS_DATA, worker.getSession());
         JSONObject requestData = worker.getRequestData();

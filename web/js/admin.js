@@ -100,61 +100,22 @@ App.prototype.settings = function () {
 
 
 
-App.prototype.createAccount = function () {
-    app.context = app.appData.formData.create_account;
-    var data = app.getFormData(app.context);
-    if (!data)
-        return;
-    if (data.password.value !== data.confirm_password.value) {
-        //do something cool
-        app.showMessage(app.context.passwords_not_match);
-        return;
-    }
-    var reg = /^(?=.*\d).{4,50}$/;
-    var valid = reg.test(data.confirm_password.value);
-    if (!valid) {
-        app.showMessage(app.context.password_not_valid);
-        return;
-    }
-    app.appData.formData.login.current_user.business_id = "";
-    var requestData = {
-        name: data.user_name.value,
-        password: data.password.value,
-        privs: ["pos_admin_service", "user_service","pos_sale_service"],
-        host: "localhost",
-        real_name : data.real_name.value
-    };
-    app.xhr(requestData, "open_data_service", "create_account", {
-        load: true,
-        success: function (resp) {
-            if (resp.response.data === "success") {
-                app.ui.modal(app.context.create_account_success,"User Account",{
-                    ok : function(){
-                       window.location = "index.html";
-                    },
-                    cancel : function(){
-                       window.location = "index.html";
-                    },
-                    okText : "Proceed",
-                    cancelText : "Cancel"
-                });
-            }
-            else if(resp.response.data === "fail"){
-               app.showMessage(app.context.create_account_fail); 
-            }
-        }
-    });
-    return false;
-};
-
-
 
 App.prototype.updateUser = function () {
     var data = app.getFormData(app.context.user);
     if (!data)
         return;
     var role = data.user_role.value;
-    var priv = role === "admin" ? ["pos_admin_service", "user_service"] : ["pos_sale_service"];
+    var priv;
+    if(role === "admin"){
+        priv = ["pos_admin_service", "user_service"];
+    }
+    else if(role === "intermediate"){
+        priv = ["pos_middle_service"];
+    }
+    else if(role === "seller"){
+        priv = ["pos_sale_service"];
+    }
     var requestData = {
         user_name: data.email_address.value,
         host: "localhost",
@@ -225,7 +186,16 @@ App.prototype.createUser = function () {
     if (!data)
         return;
     var role = data.user_role.value;
-    var priv = role === "admin" ? ["pos_admin_service", "user_service"] : ["pos_sale_service"];
+    var priv;
+    if(role === "admin"){
+        priv = ["pos_admin_service", "user_service"];
+    }
+    else if(role === "intermediate"){
+        priv = ["pos_middle_service"];
+    }
+    else if(role === "seller"){
+        priv = ["pos_sale_service"];
+    }
     var pin = Math.floor(Math.random()*100000);
     var interface = app.getSetting("user_interface");
     var password = interface === "touch" ? pin : "";
@@ -240,7 +210,6 @@ App.prototype.createUser = function () {
     app.xhr(requestData, "open_data_service", "create_account", {
         load: true,
         success: function (data) {
-            console.log(data);
             if (data.response.data === "success") {
                 if(interface === "touch"){
                     alert("User created, PIN is : "+pin);
@@ -308,6 +277,9 @@ App.prototype.allUsers = function () {
                 }
                 else if (userData.privileges[x].indexOf("pos_sale_service") > -1) {
                     priv = "Seller";
+                }
+                else if (userData.privileges[x].indexOf("pos_middle_service") > -1) {
+                    priv = "Intermediate";
                 }
                 privs[index] = priv;
                 created[index] = new Date(userData.CREATED[x]).toLocaleDateString();

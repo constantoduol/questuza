@@ -5,13 +5,14 @@ App.prototype.loadCategories = function(id,type,filter){
         filter : filter, //product filter
         username : localStorage.getItem("current_user")
     };
-    app.xhr(request,"pos_sale_service,pos_sale_service","product_categories,fetch_categories",{
+    app.xhr(request,""+app.dominant_privilege+","+app.dominant_privilege+"","product_categories,fetch_categories",{
         load : false,
         success : function(data){
-            console.log(data);
             //if the user is uncategorized or all show all the categories
-            var userCats = data.response.pos_sale_service_fetch_categories.data.CATEGORY;
-            var allCats = data.response.pos_sale_service_product_categories.data;
+            var key = app.dominant_privilege+"_fetch_categories";
+            var key1 = app.dominant_privilege+"_product_categories";
+            var userCats = data.response[key].data.CATEGORY;
+            var allCats = data.response[key1].data;
             //display the categories
             var cats;
             if(type === "category"){
@@ -25,7 +26,7 @@ App.prototype.loadCategories = function(id,type,filter){
             else {
                 cats = allCats["PRODUCT_SUB_CATEGORY"];
             }
-            app.loadCats(cats,8,id,type,filter);
+            app.loadCats(cats,6,id,type,filter);
         }
     });
 };
@@ -35,12 +36,12 @@ App.prototype.loadCats = function (cats,max,displayArea,type,filter) {
         var name = cats[x - 1];
         var data = app.getRowAndCol(x - 1,max);
         var width = (app.getDim()[0]/10);
-        var font_size = width/4;
+        var font_size = width/5;
         var heightCat = app.getDim()[1]*0.57;
         var heightSale = app.getDim()[1]*0.3;
         $("#product_category_card").css("height",heightCat+"px");
         $("#current_sale_card").css("height",heightSale+"px");
-        var cont = {font_size : font_size,name : name,filter : filter, row : data[0], col : data[1] };
+        var cont = {font_size : font_size,width : width,name : name,filter : filter, row : data[0], col : data[1] };
         var clickHandler = function(subCategory,category){
             //load the subcategories
             //if type is sub_category set a different click handler
@@ -190,7 +191,7 @@ App.prototype.loadProducts = function(category,sub_category){
                     },
                     2 : function(value,index){
                         var id = p.ID[index];
-                        var parentId = p.PRODUCT_PARENT[index].trim();
+                        var parentId = !p.PRODUCT_PARENT[index]  ? "" : p.PRODUCT_PARENT[index];
                         if(parentId.length > 0){
                            value = a.PRODUCT_QTY[a.ID.indexOf(parentId)]; 
                         }
@@ -366,11 +367,11 @@ App.prototype.printReceipt = function () {
 
 
 
-App.prototype.todaySales = function () {
+App.prototype.todaySales = function (username) {
     var date = app.getDate();
     var request = {
         id: "all",
-        user_name: app.appData.formData.login_touch.current_user.name,
+        user_name: username,
         begin_date: date,
         end_date: date,
         report_type: "stock_history"

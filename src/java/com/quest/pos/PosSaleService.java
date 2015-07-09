@@ -48,7 +48,7 @@ public class PosSaleService implements Serviceable {
        
     }
     
-    @Endpoint(name="transact",shareMethodWith = {"pos_admin_service"})
+    @Endpoint(name="transact",shareMethodWith = {"pos_admin_service","pos_middle_service"})
     public synchronized void transact(Server serv,ClientWorker worker){
         Database db = new Database(POS_DATA, worker.getSession());
         JSONObject requestData = worker.getRequestData();
