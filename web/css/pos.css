@@ -303,6 +303,7 @@ form {
   padding-right: 30px;
   border-radius: 0px;
   margin: 10px;
+  display : block;
 }
 
 
@@ -328,6 +329,17 @@ form {
 .table-striped>tbody>tr:nth-of-type(even) {
    background-color: rgba(173, 216, 230, 0.2);
    cursor: pointer;
+}
+.table-striped>tbody>tr:hover {
+   background-color: #1d8be8;
+   color : white;
+}
+
+.table-striped>tbody>tr>td {
+    -webkit-user-select: none;
+}
+.table-striped>tbody>tr>th {
+    -webkit-user-select: none;
 }
 
 .change_touch {

@@ -59,7 +59,7 @@
         </init-param>
          <init-param>
             <param-name>grant-init-privileges</param-name>
-            <param-value>pos_admin_service,user_service,pos_sale_service</param-value>
+            <param-value>pos_admin_service,user_service,pos_middle_service,pos_sale_service</param-value>
         </init-param>
          <init-param>
             <param-name>grant-init-users</param-name>

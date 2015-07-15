@@ -486,20 +486,6 @@ App.prototype.supplierSelect = function(){
 };
 
 
-App.prototype.fetchItemById = function(options){
-   var request = {
-       database : options.database,
-       table : options.table,
-       column : options.column,
-       where : options.where()
-   };
-   app.xhr(request,app.dominant_privilege,"fetch_item_by_id",{
-       load : false,
-       success : function(data){
-          options.success(data); 
-       }
-   });
-};
 
 
 App.prototype.supplierAndProduct = function(actionType,prodId,supId){
@@ -728,7 +714,8 @@ App.prototype.goodsStockHistory = function () {
         user_name: $("#stock_select_users").val(),
         begin_date: data.start_date.value+" "+$("#start_time").val(),
         end_date: data.end_date.value+" "+$("#stop_time").val(),
-        report_type : data.report_type.value
+        report_type : data.report_type.value,
+        product_categories : data.product_categories.value
     };
     app.xhr(request, app.dominant_privilege, "stock_history", {
         load: true,
@@ -839,7 +826,8 @@ App.prototype.servicesStockHistory = function () {
         user_name: $("#stock_select_users").val(),
         begin_date: data.start_date.value+" "+$("#start_time").val(),
         end_date: data.end_date.value+" "+$("#stop_time").val(),
-        report_type : data.report_type.value
+        report_type : data.report_type.value,
+        product_categories : data.product_categories.value
     };
     app.xhr(request, app.dominant_privilege, "stock_history", {
         load: true,

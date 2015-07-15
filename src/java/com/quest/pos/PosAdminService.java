@@ -55,6 +55,7 @@ import java.util.logging.Logger;
     @Model(
             database = "pos_data", table = "STOCK_DATA",
             columns = {
+                "ID VARCHAR(50)",
                 "BUSINESS_ID VARCHAR(20)",
                 "PRODUCT_ID VARCHAR(10)",
                 "TRAN_TYPE BOOL",
@@ -124,7 +125,7 @@ import java.util.logging.Logger;
                 "PRODUCT_ID VARCHAR(10)",
                 "TRANS_AMOUNT FLOAT",
                 "TRAN_TYPE BOOL",
-                "UNITS INT",
+                "UNITS FLOAT",
                 "NARRATION TEXT",
                 "USER_NAME TEXT",
                 "CREATED DATETIME"
@@ -134,6 +135,14 @@ import java.util.logging.Logger;
             columns = {
                 "USER_NAME TEXT",
                 "CATEGORY TEXT",
+                "CREATED DATETIME"
+            }),
+      @Model(
+            database = "pos_data", table = "POS_META_DATA",
+            columns = {
+                "SCOPE TEXT",
+                "META_ID TEXT",
+                "META_VALUE TEXT",
                 "CREATED DATETIME"
             })
 
@@ -199,12 +208,12 @@ public class PosAdminService implements Serviceable {
         serv.addSafeTable("pos_data", "PRODUCT_DATA", "*");
         serv.addSafeTable("pos_data", "SUPPLIER_DATA", "*");
         serv.addSafeTable("pos_data", "EXPENSE_DATA", "RESOURCE_NAME");
+        serv.addSafeTable("pos_data", "POS_META_DATA", "*");
         //check that app is activated
         validateActivation(serv);
         
         //initialise settings
         String defaultInterface = serv.getConfig().getInitParameter("default-user-interface");
-        io.out("this is the default interface: "+defaultInterface);
         Database db = new Database("user_server", null);
         boolean exists = db.ifValueExists("user_interface", "CONF_DATA", "CONF_KEY");
         if(exists) {
@@ -262,8 +271,8 @@ public class PosAdminService implements Serviceable {
             try {
                 UserAction action = new UserAction(worker, "UPDATE PRODUCT " + productName);
                 JSONObject productData = db.query("SELECT BP_UNIT_COST,PRODUCT_QTY FROM PRODUCT_DATA WHERE ID=?", prodId);
-                Integer storedProductQty = Integer.parseInt(productData.optJSONArray("PRODUCT_QTY").optString(0));
-                Integer newProductQty = Integer.parseInt(productQty);
+                Double storedProductQty = Double.parseDouble(productData.optJSONArray("PRODUCT_QTY").optString(0));
+                Double newProductQty = Double.parseDouble(productQty);
                 Database.executeQuery("UPDATE PRODUCT_DATA SET PRODUCT_NAME=?, "
                         + "PRODUCT_QTY=?, PRODUCT_CATEGORY = ?,PRODUCT_SUB_CATEGORY = ?,PRODUCT_PARENT = ?, PRODUCT_UNIT_SIZE = ?, BP_UNIT_COST=?, "
                         + "SP_UNIT_COST=?, PRODUCT_REMIND_LIMIT=?, "
@@ -272,11 +281,11 @@ public class PosAdminService implements Serviceable {
                         productBp, productSp, productRlimit, productEdate, productNarr, tax, comm, prodId, busId);
                 if (storedProductQty > newProductQty) {
                     //reduction in stock
-                    Integer theQty = storedProductQty - newProductQty;
+                    Double theQty = storedProductQty - newProductQty;
                     addStock(prodId, busId, theQty.toString(), productBp, productSp, 0, productNarr, "stock_out", bType, db, userName);
                 } else if (newProductQty > storedProductQty) {
                     //increase in stock
-                    Integer theQty = newProductQty - storedProductQty;
+                    Double theQty = newProductQty - storedProductQty;
                     addStock(prodId, busId, theQty.toString(), productBp, productSp, 1, productNarr, "stock_in", bType, db, userName);
                 }
                 action.saveAction();
@@ -292,11 +301,12 @@ public class PosAdminService implements Serviceable {
     }
 
     private void addStock(String prodId, String busId, String stockQty, String bPrice, String sPrice, Integer type, String narr, String tranFlag, String bType, Database db, String userName) {
-        Integer qty = Integer.parseInt(stockQty);
-        Float price = Float.parseFloat(bPrice);
-        Float price1 = Float.parseFloat(sPrice);
-        Float costBp = qty * price;
-        Float costSp = qty * price1;
+        Double qty = Double.parseDouble(stockQty);
+        Double price = Double.parseDouble(bPrice);
+        Double price1 = Double.parseDouble(sPrice);
+        Double costBp = qty * price;
+        Double costSp = qty * price1;
+        String transId = new UniqueRandom(50).nextMixedRandom();
         //specify profit also
         if (narr.equals("")) {
             if (type == 1) {
@@ -306,7 +316,7 @@ public class PosAdminService implements Serviceable {
             }
         }
         if (bType.equals("goods")) {
-            db.doInsert("STOCK_DATA", new String[]{busId, prodId, type.toString(), costBp.toString(), costSp.toString(), stockQty, "0", tranFlag, narr, "!NOW()", userName});
+            db.doInsert("STOCK_DATA", new String[]{transId,busId, prodId, type.toString(), costBp.toString(), costSp.toString(), stockQty, "0", tranFlag, narr, "!NOW()", userName});
         }
 
     }
@@ -364,10 +374,10 @@ public class PosAdminService implements Serviceable {
         String bType = request.optString("business_type");
         String userName = worker.getSession().getAttribute("username").toString();
         JSONObject prodData = db.query("SELECT * FROM PRODUCT_DATA WHERE ID = ? AND BUSINESS_ID = ?", prodId, busId);
-        int productTotalqty = prodData.optJSONArray("PRODUCT_QTY").optInt(0);
-        int newQty = productTotalqty;
-        int theUnits = Integer.parseInt(units);
-        Float cost = bType.equals("goods") ? Float.parseFloat(sp) * theUnits : Float.parseFloat(transAmount);
+        double productTotalqty = prodData.optJSONArray("PRODUCT_QTY").optDouble(0);
+        double newQty = productTotalqty;
+        double theUnits = Double.parseDouble(units);
+        Double cost = bType.equals("goods") ? Double.parseDouble(sp) * theUnits : Double.parseDouble(transAmount);
         if (entryType.equals("1")) {
             //this is stock in
             newQty = productTotalqty + theUnits; //increase the quantity, we are receiving stock
@@ -380,7 +390,7 @@ public class PosAdminService implements Serviceable {
                 serv.messageToClient(worker);
                 return;
             } else {
-                newQty = productTotalqty - Integer.parseInt(units);
+                newQty = productTotalqty - Double.parseDouble(units);
             }
         }
         String tranFlag = entryType.equals("1") ? "stock_in" : "stock_out";
@@ -388,7 +398,8 @@ public class PosAdminService implements Serviceable {
         db.doInsert("SUPPLIER_ACCOUNT", new String[]{supId, busId, prodId, transAmount, entryType, units, narr, userName, "!NOW()"});
         db.execute("UPDATE PRODUCT_DATA SET PRODUCT_QTY='" + newQty + "' WHERE ID='" + prodId + "' AND BUSINESS_ID='" + busId + "'");
         //note this as a stock movement
-        db.doInsert("STOCK_DATA", new String[]{busId, prodId, entryType, transAmount, cost.toString(), units, "0", tranFlag, narr, "!NOW()", userName});
+        String transId = new UniqueRandom(50).nextMixedRandom();
+        db.doInsert("STOCK_DATA", new String[]{transId,busId, prodId, entryType, transAmount, cost.toString(), units, "0", tranFlag, narr, "!NOW()", userName});
         //stock in is an expense on our side so put a 0
         //stock out is a revenue or refund
 
@@ -714,19 +725,22 @@ public class PosAdminService implements Serviceable {
         String prodId = requestData.optString("id");
         String userName = requestData.optString("user_name");
         String busId = requestData.optString("business_id");
-        String extraSql = userName.equals("all") ? "" : "AND STOCK_DATA.USER_NAME = '" + userName + "'";
+        String category = requestData.optString("product_categories");
+        String extraSql = userName.equals("all") ? "" : " AND STOCK_DATA.USER_NAME = '" + userName + "' ";
+        String extraSql1 = category.equals("all") ? "" : " AND PRODUCT_DATA.PRODUCT_CATEGORY = '" + category + "' ";
+        String allExtraSql = extraSql + extraSql1;
         JSONObject data;
         //what we need
         //stock_id, stock name,stock_bp, stock_sp,stock_qty, profit,type,narr,date,initiator
-        String allSql = "SELECT PRODUCT_ID,STOCK_COST_BP,STOCK_COST_SP,STOCK_QTY, TRAN_FLAG, "
+        String allSql = "SELECT STOCK_DATA.ID,PRODUCT_ID,STOCK_COST_BP,STOCK_COST_SP,STOCK_QTY, TRAN_FLAG, "
                 + "TRAN_TYPE,PROFIT,STOCK_DATA.NARRATION,STOCK_DATA.CREATED,PRODUCT_DATA.PRODUCT_NAME, USER_NAME  "
                 + "FROM STOCK_DATA,PRODUCT_DATA WHERE PRODUCT_DATA.ID = STOCK_DATA.PRODUCT_ID AND "
-                + "STOCK_DATA.BUSINESS_ID = ? AND STOCK_DATA.CREATED >= ? AND STOCK_DATA.CREATED <= ? " + extraSql + " ORDER BY STOCK_DATA.CREATED DESC";
+                + "STOCK_DATA.BUSINESS_ID = ? AND STOCK_DATA.CREATED >= ? AND STOCK_DATA.CREATED <= ? " + allExtraSql + " ORDER BY STOCK_DATA.CREATED DESC";
 
-        String specificSql = "SELECT PRODUCT_ID,STOCK_COST_BP,STOCK_COST_SP,STOCK_QTY, TRAN_FLAG, "
+        String specificSql = "SELECT STOCK_DATA.ID,PRODUCT_ID,STOCK_COST_BP,STOCK_COST_SP,STOCK_QTY, TRAN_FLAG, "
                 + "TRAN_TYPE,PROFIT,STOCK_DATA.NARRATION,STOCK_DATA.CREATED, PRODUCT_DATA.PRODUCT_NAME, USER_NAME  "
                 + "FROM STOCK_DATA,PRODUCT_DATA WHERE PRODUCT_DATA.ID = STOCK_DATA.PRODUCT_ID AND STOCK_DATA.BUSINESS_ID = ? "
-                + " AND STOCK_DATA.PRODUCT_ID = ? AND STOCK_DATA.CREATED >= ? AND STOCK_DATA.CREATED <= ? " + extraSql + " ORDER BY STOCK_DATA.CREATED DESC";
+                + " AND STOCK_DATA.PRODUCT_ID = ? AND STOCK_DATA.CREATED >= ? AND STOCK_DATA.CREATED <= ? " + allExtraSql + " ORDER BY STOCK_DATA.CREATED DESC";
         if (prodId.equals("all")) {
             data = db.query(allSql, busId, beginDate, endDate);
         } else {
@@ -786,7 +800,6 @@ public class PosAdminService implements Serviceable {
         //commissions and taxes are in built expenses
         Database db1 = new Database("user_server",worker.getSession());
         JSONObject settings = db1.query("SELECT * FROM CONF_DATA");
-        io.out(settings);
         int commIndex = settings.optJSONArray("CONF_KEY").toList().indexOf("add_comm");
         int taxIndex = settings.optJSONArray("CONF_KEY").toList().indexOf("add_tax");
 
@@ -980,7 +993,7 @@ public class PosAdminService implements Serviceable {
     }
     
     
-    @Endpoint(name="fetch_item_by_id")
+    @Endpoint(name="fetch_item_by_id",shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void fetchItemById(Server serv,ClientWorker worker){
         JSONObject requestData = worker.getRequestData();
         String database = requestData.optString("database");
@@ -990,7 +1003,6 @@ public class PosAdminService implements Serviceable {
         boolean isSafe = serv.isTableSafe(database, table, column);
         Database db = new Database(database, worker.getSession());
         if(isSafe){
-            io.out("SELECT "+column+" FROM "+table+" WHERE "+where+" ");
             JSONObject data = db.query("SELECT "+column+" FROM "+table+" WHERE "+where+" ");
             worker.setResponseData(data);
             serv.messageToClient(worker);
@@ -1035,6 +1047,22 @@ public class PosAdminService implements Serviceable {
         String username = requestData.optString("username");
         JSONObject data = db.query("SELECT * FROM USER_CATEGORIES WHERE USER_NAME = ?",username);
         worker.setResponseData(data);
+        serv.messageToClient(worker);
+    }
+    
+    @Endpoint(name="note_cash_received",shareMethodWith = {"pos_middle_service"})
+    public void noteCashReceived(Server serv,ClientWorker worker){
+        Database db = new Database(POS_DATA, worker.getSession());
+        JSONObject requestData = worker.getRequestData();
+        String received = requestData.optString("cash_received");
+        String transId = requestData.optString("trans_id");
+        if(received.equals("Yes")){
+            db.doInsert("POS_META_DATA",new String[]{"cash_received",transId,received,"!NOW()"});
+        }
+        else if(received.equals("No")){
+            db.query("DELETE FROM POS_META_DATA WHERE SCOPE='cash_received' AND META_ID='"+transId+"'");
+        }
+        worker.setResponseData(Message.SUCCESS);
         serv.messageToClient(worker);
     }
 

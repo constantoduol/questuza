@@ -171,7 +171,7 @@ AppData.prototype.formData = {
 
             $("#commit_link").click(app.commitSale);
             $("#todays_sale_link").click(function () {
-                app.todaySales(app.appData.formData.login_touch.current_user.name);
+                app.todaySales(app.appData.formData.login_touch.current_user.name,"all");
             });
             $("#logout_link").unbind("click");
             $("#logout_link").click(app.logout);
@@ -180,22 +180,33 @@ AppData.prototype.formData = {
                 $("#users_report_link").css("visibility", "visible");
                 $("#users_report_link").click(function () {
                     var select = "<label for='user_select'>Select User</label>\n\
-                                    <select id='user_select'><option value='all'>All</select>";
+                                    <select id='user_select'><option value='all'>All</select>\n\
+                                    <label for='category_select'>Product Category</label>\n\
+                                    <select id='category_select'><option value='all'>All</select>";
                     var m = app.ui.modal(select,"Generate Report",{
                         okText : "Generate",
                         ok : function(){
-                            app.todaySales($("#user_select").val());
+                            app.todaySales($("#user_select").val(),$("#category_select").val());
                             m.modal('hide');
                         }
                     });
-                    app.xhr({}, app.dominant_privilege, "all_users", {
+                    app.xhr({category_type : "category"}, "" + app.dominant_privilege + "," + app.dominant_privilege + "", "all_users,product_categories", {
                         load: false,
                         success: function (data) {
-                            var userResp = data.response.data;
+                            var key = app.dominant_privilege + "_all_users";
+                            var key1 = app.dominant_privilege + "_product_categories";
+                            var userResp = data.response[key].data;
+                            var catResp = data.response[key1].data.PRODUCT_CATEGORY;
                             $.each(userResp.USER_NAME, function (index) {
                                 var name = userResp.USER_NAME[index];
                                 $("#user_select").append($("<option value=" + name + ">" + name + "</option>"));
                             });
+                            
+                            $.each(catResp, function (index) {
+                                var cat = catResp[index];
+                                $("#category_select").append($("<option value=" + cat + ">" + cat + "</option>"));
+                            });
+                            
                             app.runLater(200,function(){
                                  $("#modal_area_button_ok").focus();
                             });
@@ -489,13 +500,15 @@ AppData.prototype.formData = {
                 $("#stop_time").append($("<option value=" + time + ">" + time + "</option>"));
             });
             //load all users
-            app.xhr({}, "" + app.dominant_privilege + "," + app.dominant_privilege + "", "all_users,all_suppliers", {
+            app.xhr({category_type : "category"}, "" + app.dominant_privilege + "," + app.dominant_privilege + "," + app.dominant_privilege + "", "all_users,all_suppliers,product_categories", {
                 load: false,
                 success: function (data) {
                     var key = app.dominant_privilege + "_all_users";
                     var key1 = app.dominant_privilege + "_all_suppliers";
+                    var key2 =  app.dominant_privilege + "_product_categories";
                     var userResp = data.response[key].data;
                     var supResp = data.response[key1].data;
+                    var catResp = data.response[key2].data.PRODUCT_CATEGORY;
                     $("#stock_select_users").html("<option value='all'>All</option>");
                     $.each(userResp.USER_NAME, function (index) {
                         var name = userResp.USER_NAME[index];
@@ -508,6 +521,14 @@ AppData.prototype.formData = {
                         var id = supResp.ID[index];
                         $("#stock_select_suppliers").append($("<option value=" + id + ">" + name + "</option>"));
                     });
+                    
+                    $("#product_categories").html("<option value='all'>All</option>");
+                    $.each(catResp, function (index) {
+                        var cat = catResp[index];
+                        $("#product_categories").append($("<option value=" + cat + ">" + cat + "</option>"));
+                    });
+                    
+                    
                 }
             });
         }
@@ -1003,6 +1024,7 @@ AppData.prototype.formData = {
                 report_type: {required: true, message: "Report type is required"},
                 start_date: {required: true, message: "Start date is required"},
                 end_date: {required: true, message: "End date is required"},
+                product_categories : {required : true,message : "Product category is required"},
                 search_products: {
                     required: false,
                     autocomplete: {

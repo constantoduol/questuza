@@ -49,7 +49,7 @@ App.prototype.xhr = function (data, svc, msg, func) {
             return data;
         },
         success: function(data){
-            func.success(data);
+            if(func.success) func.success(data);
         },
         error: function(err){
             if (func.load) {

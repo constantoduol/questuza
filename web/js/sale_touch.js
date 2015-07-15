@@ -275,16 +275,16 @@ App.prototype.commitSale = function () {
                 load: true,
                 success: function (data) {
                     var resp = data.response.data;
-                    if (resp === "success") {
+                    if (resp.status === "success") {
                         //well transaction successful
                         if (app.platform === "web") {
-                            app.printReceipt();
-                            app.printReceipt();
+                            app.printReceipt(resp);
+                            app.printReceipt(resp);
                         }
                         $("#clear_sale_link").click();
                         app.showMessage(app.context.transact_success);
                     }
-                    else if (resp === "fail") {
+                    else if (resp.status === "fail") {
                         app.showMessage(app.context.transact_fail);
                     }
                 }
@@ -308,7 +308,7 @@ App.prototype.generateReceipt = function () {
     var $frame = $("#receipt_area");
     var doc = $frame[0].contentWindow.document;
     var $body = $('body', doc);
-    $body.html("<div id='receipt_iframe_area' style='font-size:20px'></div>");
+    $body.html("<div id='receipt_iframe_area' style='font-size:14px'></div>");
     $("#receipt_area_dummy").html("");
     var recArea = $("#receipt_iframe_area", doc);
     var elems = $(".qtys");
@@ -349,17 +349,19 @@ App.prototype.generateReceipt = function () {
         id_to_append: "receipt_area_dummy",
         headers: recHeaders,
         values: recValues,
-        style : "font-size:20px"
+        style : "font-size:12px"
     });
     var username = localStorage.getItem("current_user");
-    var footer = "<div><span>Date : " + new Date().toLocaleString() + "</span><br/><span>Served by: " + username + "</span></div>";
+    var footer = "<div><span id='time_area'></span><br/><span>Served by: " + username + "</span></div>";
     footer = footer + receiptFooter;
     recArea.append($("#receipt_area_dummy").html());//copy to iframe
     recArea.append(footer);
 };
 
-App.prototype.printReceipt = function () {
+App.prototype.printReceipt = function (resp) {
+    var serverTime = resp.server_time.replace("EAT",",");
     var win = document.getElementById("receipt_area").contentWindow;
+    win.document.getElementById("time_area").innerHTML = serverTime;
     win.focus();// focus on contentWindow is needed on some ie versions
     win.print();
 };
@@ -367,15 +369,31 @@ App.prototype.printReceipt = function () {
 
 
 
-App.prototype.todaySales = function (username) {
+App.prototype.todaySales = function (username,category) {
     var date = app.getDate();
+    var cashReceived;
     var request = {
         id: "all",
         user_name: username,
         begin_date: date,
         end_date: date,
-        report_type: "stock_history"
+        report_type: "stock_history",
+        product_categories : category
     };
+    
+    app.fetchItemById({
+        database : "pos_data",
+        table : "POS_META_DATA",
+        column : "*",
+        where : function(){
+            return "SCOPE='cash_received'";
+        },
+        success : function(resp){
+           cashReceived = resp.response.data;
+        }
+    });
+    
+    
     app.xhr(request, app.dominant_privilege, "stock_history", {
         load: true,
         success: function (data) {
@@ -439,14 +457,31 @@ App.prototype.todaySales = function (username) {
                     resp.CREATED.push("");
                     app.ui.table({
                         id_to_append: "paginate_body",
-                        headers: ["Product Name", "Entry Type", "Sale Qty", "Amount Received", "Narration", "Entry Time", "Undo Sale"],
-                        values: [resp.PRODUCT_NAME, resp.TRAN_TYPE, resp.STOCK_QTY, resp.STOCK_COST_SP, resp.NARRATION, resp.CREATED, undos],
+                        headers: ["Product Name", "Entry Type", "Sale Qty", "Amount Received", "Narration", "Entry Time", "Undo Sale","Cash Received"],
+                        values: [resp.PRODUCT_NAME, resp.TRAN_TYPE, resp.STOCK_QTY, resp.STOCK_COST_SP, resp.NARRATION, resp.CREATED, undos,resp.ID],
                         include_nums: true,
                         style: "",
                         mobile_collapse: true,
                         summarize: {
                             cols: [4],
                             lengths: [80]
+                        },
+                        transform : {
+                            7 : function(value,index){
+                                if(app.dominant_privilege !== "pos_middle_service") return;
+                                var received = cashReceived.META_ID.indexOf(value) > -1 ? "Yes" : "No";
+                                var href = $("<a href='#'>"+received+"</a>");
+                                href.click(function(){
+                                    var current = this.innerHTML;
+                                    if(current === "Yes") return; //this was added because clients dont want somebody to reverse this
+                                    var isReceived = current === "Yes" ? "No" : "Yes";
+                                    this.innerHTML = isReceived;
+                                    app.xhr({trans_id : value,cash_received :isReceived},app.dominant_privilege,"note_cash_received",{
+                                        load : false
+                                    });
+                                });
+                                return href;
+                            }
                         }
                     });
                 }

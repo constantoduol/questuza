@@ -5,6 +5,8 @@
  */
 package com.quest.pos;
 
+import com.quest.access.common.UniqueRandom;
+import com.quest.access.common.io;
 import com.quest.access.common.mysql.Database;
 import com.quest.access.control.Server;
 import com.quest.access.useraccess.Serviceable;
@@ -12,11 +14,14 @@ import com.quest.access.useraccess.services.Message;
 import com.quest.access.useraccess.services.annotations.Endpoint;
 import com.quest.access.useraccess.services.annotations.WebService;
 import com.quest.servlets.ClientWorker;
+import java.util.Calendar;
+import java.util.Date;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.JSONException;
 
 /**
  *
@@ -49,7 +54,7 @@ public class PosSaleService implements Serviceable {
     }
     
     @Endpoint(name="transact",shareMethodWith = {"pos_admin_service","pos_middle_service"})
-    public synchronized void transact(Server serv,ClientWorker worker){
+    public synchronized void transact(Server serv,ClientWorker worker) throws JSONException{
         Database db = new Database(POS_DATA, worker.getSession());
         JSONObject requestData = worker.getRequestData();
         JSONArray ids = requestData.optJSONArray("product_ids");
@@ -60,9 +65,11 @@ public class PosSaleService implements Serviceable {
         String type = requestData.optString("tran_type");
         String tranFlag = requestData.optString("tran_flag");
         String userName = worker.getSession().getAttribute("username").toString();
+        
         for (int x = 0; x < ids.length(); x++) {
             try {
                 String prodId = ids.optString(x);
+                String transId = new UniqueRandom(50).nextMixedRandom();
                 JSONObject prodData = db.query("SELECT * FROM PRODUCT_DATA WHERE ID = ? AND BUSINESS_ID = ?", prodId,busId);
                 double bp = prodData.optJSONArray("BP_UNIT_COST").optDouble(0);
                 double sp = prodData.optJSONArray("SP_UNIT_COST").optDouble(0);
@@ -70,7 +77,8 @@ public class PosSaleService implements Serviceable {
                 double comm = prodData.optJSONArray("COMMISSION").optDouble(0);
                 //take care of shared products, deduct from the correct stock
                 String parentProduct = prodData.optJSONArray("PRODUCT_PARENT").optString(0);
-                Double unitSize = prodData.optJSONArray("PRODUCT_UNIT_SIZE").optDouble(0,1);
+                double uSize = prodData.optJSONArray("PRODUCT_UNIT_SIZE").optDouble(0,1);
+                Double unitSize = prodData.optJSONArray("PRODUCT_UNIT_SIZE").optDouble(0,1) == 0 ? 1 : uSize;
                 //get the parent product available qty
                 double productTotalqty;
                 Double noOfUnits = qtys.optDouble(x);
@@ -94,7 +102,7 @@ public class PosSaleService implements Serviceable {
                 } 
                 else if (type.equals("0")) {
                     narration = narration.equals("") ? "Sale to Customer" : narration;
-                    db.doInsert("STOCK_DATA", new String[]{busId, prodId, type, bPrice.toString(), cost.toString(), unitsSold.toString(), profit.toString(),tranFlag, narration, "!NOW()",userName});
+                    db.doInsert("STOCK_DATA", new String[]{transId,busId, prodId, type, bPrice.toString(), cost.toString(), unitsSold.toString(), profit.toString(),tranFlag, narration, "!NOW()",userName});
                     //add tax and commissions
                     if(tax > 0) {
                         Double taxValue = (tax / 100) * cost;
@@ -110,7 +118,7 @@ public class PosSaleService implements Serviceable {
                     newQty = productTotalqty + noOfUnits; //increase the quantity if customer is returning stock
                     narration = narration.equals("") ? "Reversal of sale" : narration;
                     profit = -profit;
-                    db.doInsert("STOCK_DATA", new String[]{busId, prodId, type, bPrice.toString(), cost.toString(), unitsSold.toString(), profit.toString(),tranFlag, narration, "!NOW()",userName});
+                    db.doInsert("STOCK_DATA", new String[]{transId,busId, prodId, type, bPrice.toString(), cost.toString(), unitsSold.toString(), profit.toString(),tranFlag, narration, "!NOW()",userName});
                 }
                 
                 if(parentProduct.isEmpty()){
@@ -124,8 +132,11 @@ public class PosSaleService implements Serviceable {
                 Logger.getLogger(PosSaleService.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-       
-        worker.setResponseData(Message.SUCCESS);
+        
+        JSONObject response = new JSONObject();
+        response.put("status",Message.SUCCESS);
+        response.put("server_time",new Date());
+        worker.setResponseData(response);
         serv.messageToClient(worker);
     }
     
