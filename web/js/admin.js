@@ -614,10 +614,57 @@ App.prototype.allSuppliers = function(){
                             r.CONTACT_PERSON_NAME, r.CONTACT_PERSON_PHONE, r.CITY, r.COUNTRY],
                         include_nums : true,
                         style : "",
-                        mobile_collapse : true,
+                        mobile_collapse : true
                     });
                 }
             });
+        }
+    });
+};
+
+
+App.prototype.gridEdit = function(ids,columns,headers,values){
+    headers.shift(); //remove the No header
+    $("#paginate_body").html("");//empty the area
+    app.newGrid({
+        id : "paginate_body",
+        col_names : headers,
+        load_column_by_column : true, 
+        init_data : values,
+        disabled : [0,7,8],
+        col_types: function () {
+            var types = [];
+            $.each(headers, function (index) {
+                var width = 100;
+                width = headers[index] === "Product Name" ? 200 : width;
+                types.push({
+                    type: 'text',
+                    width: width
+                });
+            });
+            return types;
+        },
+        onEdit : function(row,col,oldValue,newValue){
+           //do a delayed save
+           app.runLater(1000,function(){
+               var request = {
+                   id : ids[row],
+                   old_value : oldValue,
+                   new_value : newValue,
+                   column : columns[col]
+               };
+               app.xhr(request,app.dominant_privilege,"save_grid_edit",{
+                   load : false,
+                   success : function(resp){
+                       if(resp.response.data === "success"){
+                          $("#paginate_edit_icon").css("background","lightgreen");
+                          app.runLater(2000,function(){
+                              $("#paginate_edit_icon").css("background","lightblue"); 
+                          });
+                       }
+                   }
+               });
+           });
         }
     });
 };
@@ -639,7 +686,7 @@ App.prototype.allProducts = function (handler) {
                 onload_handler: handler,
                 onload: function () {
                     var bType = app.appData.formData.login.current_user.business_type;
-                    var headers, values;
+                    var headers, values,columns;
                     $.each(resp.PRODUCT_NAME, function (index) {
                         resp.CREATED[index] = new Date(resp.CREATED[index]).toLocaleDateString();
                         resp.PRODUCT_EXPIRY_DATE[index] = new Date(resp.PRODUCT_EXPIRY_DATE[index]).toLocaleDateString();
@@ -651,15 +698,23 @@ App.prototype.allProducts = function (handler) {
                         headers = ["Product Name", "Category","S/Category", "BP/Unit", "SP/Unit", "Available Qty", "Reminder Limit", "Date Created", "Expiry Date"];
                         values = [resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.BP_UNIT_COST, resp.SP_UNIT_COST, resp.PRODUCT_QTY,
                             resp.PRODUCT_REMIND_LIMIT, resp.CREATED, resp.PRODUCT_EXPIRY_DATE];
+                        columns = ["PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "BP_UNIT_COST", "SP_UNIT_COST","PRODUCT_QTY",
+                            "PRODUCT_REMIND_LIMIT", "CREATED","PRODUCT_EXPIRY_DATE"];
+                        
                     }
                     else if (bType === "services") {
                         if (app.getSetting("track_stock") === "1") {
                             headers = ["Product Name", "Category","S/Category", "SP/Unit","Available Qty", "Date Created"];
-                            values = [resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.SP_UNIT_COST, resp.PRODUCT_QTY, resp.CREATED];
+                            values = [resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.SP_UNIT_COST, 
+                                resp.PRODUCT_QTY, resp.CREATED];
+                            columns = ["PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "SP_UNIT_COST", 
+                                "PRODUCT_QTY","CREATED"];
+                            
                         }
                         else {
                             headers = ["Product Name", "Category","S/Category" ,"SP/Unit", "Date Created"];
                             values = [resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.SP_UNIT_COST, resp.CREATED];
+                            columns = ["PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "SP_UNIT_COST", "CREATED"];
                         }
                     }
                      app.ui.table({
@@ -671,7 +726,7 @@ App.prototype.allProducts = function (handler) {
                         mobile_collapse : true,
                         transform : {
                             0: function(value,index){
-                                return "<a href='#' id=item_select_" + index + ">" + value + "</a>"
+                                return "<a href='#' id=item_select_" + index + ">" + value + "</a>";
                             }
                         }
                     });
@@ -692,6 +747,16 @@ App.prototype.allProducts = function (handler) {
                             });
                         });
                     });
+                    
+                    //add an edit button for the admin
+                    if (app.dominant_privilege === "pos_admin_service") {
+                        var img = $("<img src='img/edit.png' title='Edit' class='paginate_round_icon' id='paginate_edit_icon'>");
+                        img.click(function () {
+                            //launch the edit grid 
+                            app.gridEdit(resp.ID,columns,headers,values);
+                        });
+                        $("#paginate_button_area").append(img);
+                    }
                 }
             });
         }
@@ -712,8 +777,8 @@ App.prototype.goodsStockHistory = function () {
     var request = {
         id: id,
         user_name: $("#stock_select_users").val(),
-        begin_date: data.start_date.value+" "+$("#start_time").val(),
-        end_date: data.end_date.value+" "+$("#stop_time").val(),
+        begin_date: data.start_date.value+" "+$("#start_time").val()+":00",
+        end_date: data.end_date.value+" "+$("#stop_time").val()+":59",
         report_type : data.report_type.value,
         product_categories : data.product_categories.value
     };
@@ -824,8 +889,8 @@ App.prototype.servicesStockHistory = function () {
     var request = {
         id: id,
         user_name: $("#stock_select_users").val(),
-        begin_date: data.start_date.value+" "+$("#start_time").val(),
-        end_date: data.end_date.value+" "+$("#stop_time").val(),
+        begin_date: data.start_date.value+" "+$("#start_time").val()+":00",
+        end_date: data.end_date.value+" "+$("#stop_time").val()+":59",
         report_type : data.report_type.value,
         product_categories : data.product_categories.value
     };
@@ -1074,8 +1139,8 @@ App.prototype.reportHistory = function(options){
     var request = {
         id: id,
         user_name: $("#stock_select_users").val(),
-        begin_date: data.start_date.value+" "+$("#start_time").val(),
-        end_date: data.end_date.value+" "+$("#stop_time").val(),
+        begin_date: data.start_date.value+" "+$("#start_time").val()+":00",
+        end_date: data.end_date.value+" "+$("#stop_time").val()+":59",
         report_type : data.report_type.value,
         supplier_id : $("#stock_select_suppliers").val()
     };

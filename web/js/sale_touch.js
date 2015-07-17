@@ -370,13 +370,12 @@ App.prototype.printReceipt = function (resp) {
 
 
 App.prototype.todaySales = function (username,category) {
-    var date = app.getDate();
     var cashReceived;
     var request = {
         id: "all",
         user_name: username,
-        begin_date: date,
-        end_date: date,
+        begin_date: "server_time_begin",
+        end_date: "server_time_end",
         report_type: "stock_history",
         product_categories : category
     };

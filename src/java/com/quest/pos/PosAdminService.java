@@ -18,6 +18,7 @@ import com.quest.access.useraccess.services.annotations.Models;
 import com.quest.access.useraccess.services.annotations.WebService;
 import com.quest.access.useraccess.verification.UserAction;
 import com.quest.servlets.ClientWorker;
+import java.util.Calendar;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -174,7 +175,7 @@ public class PosAdminService implements Serviceable {
 
     private void validateActivation(Server serv) {
         try {
-            Database db = new Database("user_server", null);
+            Database db = new Database("user_server");
             JSONObject data = db.query("SELECT * FROM ACTIVATION_DATA");
             String key = data.optJSONArray("ACTIVATION_KEY").optString(0);
             String name = data.optJSONArray("BUSINESS_NAME").optString(0);
@@ -214,7 +215,7 @@ public class PosAdminService implements Serviceable {
         
         //initialise settings
         String defaultInterface = serv.getConfig().getInitParameter("default-user-interface");
-        Database db = new Database("user_server", null);
+        Database db = new Database("user_server");
         boolean exists = db.ifValueExists("user_interface", "CONF_DATA", "CONF_KEY");
         if(exists) {
             db.query("UPDATE CONF_DATA SET CONF_VALUE='"+defaultInterface+"' WHERE CONF_KEY='user_interface'");
@@ -226,7 +227,7 @@ public class PosAdminService implements Serviceable {
 
     @Endpoint(name = "add_resource")
     public void addResource(Server serv, ClientWorker worker) throws Exception {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String type = requestData.optString("resource_type");
         String name = requestData.optString("resource_name");
@@ -240,7 +241,7 @@ public class PosAdminService implements Serviceable {
 
     @Endpoint(name = "update_product")
     public void updateProduct(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String prodId = requestData.optString("id");
         String productName = requestData.optString("product_name");
@@ -323,7 +324,7 @@ public class PosAdminService implements Serviceable {
 
     @Endpoint(name = "supplier_and_product")
     public void supplierAndProduct(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject request = worker.getRequestData();
         String actionType = request.optString("action_type");
         String busId = request.optString("business_id");
@@ -361,7 +362,7 @@ public class PosAdminService implements Serviceable {
 
     @Endpoint(name = "supplier_account_transact")
     public void supplierAccount(Server serv, ClientWorker worker) throws Exception {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject request = worker.getRequestData();
         String supId = request.optString("supplier_id");
         String prodId = request.optString("product_id");
@@ -409,7 +410,7 @@ public class PosAdminService implements Serviceable {
 
     @Endpoint(name = "supplier_action")
     public void supplierAction(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject request = worker.getRequestData();
         String name = request.optString("supplier_name");
         String country = request.optString("country");
@@ -461,7 +462,7 @@ public class PosAdminService implements Serviceable {
 
     @Endpoint(name = "create_product")
     public synchronized void createProduct(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String productName = requestData.optString("product_name");
         String productQty = requestData.optString("product_quantity");
@@ -512,7 +513,7 @@ public class PosAdminService implements Serviceable {
 
     @Endpoint(name = "delete_product")
     public void deleteProduct(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String id = requestData.optString("id");
         String busId = requestData.optString("business_id");
@@ -527,7 +528,7 @@ public class PosAdminService implements Serviceable {
 
     @Endpoint(name = "all_products", shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void allProducts(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String cat = requestData.optString("category");
         String busId = requestData.optString("business_id");
@@ -546,10 +547,26 @@ public class PosAdminService implements Serviceable {
         worker.setResponseData(data);
         serv.messageToClient(worker);
     }
+    
+    @Endpoint(name="save_grid_edit")
+    public void saveGridEdit(Server serv, ClientWorker worker){
+        Database db = new Database(POS_DATA);
+        JSONObject requestData = worker.getRequestData();
+        String column = requestData.optString("column");
+        String id = requestData.optString("id");
+        String newValue = requestData.optString("new_value");
+        db.query()
+                .update("PRODUCT_DATA")
+                .set(""+column+"='"+newValue+"'")
+                .where("ID='"+id+"'")
+                .execute();
+        worker.setResponseData(Message.SUCCESS);
+        serv.messageToClient(worker);
+    }
 
     @Endpoint(name = "all_suppliers",shareMethodWith = {"pos_middle_service"})
     public void allSuppliers(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String busId = requestData.optString("business_id");
         JSONObject data = db.query()
@@ -566,7 +583,7 @@ public class PosAdminService implements Serviceable {
     public void allUsers(Server serv, ClientWorker worker) throws NonExistentDatabaseException {
         JSONObject requestData = worker.getRequestData();
         String busId = requestData.optString("business_id");
-        Database users = new Database("user_server", worker.getSession());
+        Database users = new Database("user_server");
         JSONObject data = users.query("SELECT USER_NAME FROM BUSINESS_USERS WHERE BUSINESS_ID='" + busId + "'");
         worker.setResponseData(data);
         serv.messageToClient(worker);
@@ -602,7 +619,7 @@ public class PosAdminService implements Serviceable {
                     .append(" LIMIT ")
                     .append(limit);
             //System.out.println(builder.toString());
-            Database theDb = new Database(database, worker.getSession());
+            Database theDb = new Database(database);
             JSONObject data = theDb.query(builder.toString());
             worker.setResponseData(data);
             serv.messageToClient(worker);
@@ -630,10 +647,10 @@ public class PosAdminService implements Serviceable {
     }
 
     private void supplierHistory(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
-        String beginDate = requestData.optString("begin_date") + " :00";
-        String endDate = requestData.optString("end_date") + " :59";
+        String beginDate = requestData.optString("begin_date");
+        String endDate = requestData.optString("end_date");
         String prodId = requestData.optString("id");
         String userName = requestData.optString("user_name");
         String busId = requestData.optString("business_id");
@@ -656,10 +673,10 @@ public class PosAdminService implements Serviceable {
     }
 
     private void commissionHistory(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
-        String beginDate = requestData.optString("begin_date") + ":00";
-        String endDate = requestData.optString("end_date") + ":59";
+        String beginDate = requestData.optString("begin_date");
+        String endDate = requestData.optString("end_date");
         String prodId = requestData.optString("id");
         String userName = requestData.optString("user_name");
         String busId = requestData.optString("business_id");
@@ -686,10 +703,10 @@ public class PosAdminService implements Serviceable {
     }
 
     private void taxHistory(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
-        String beginDate = requestData.optString("begin_date") + ":00";
-        String endDate = requestData.optString("end_date") + ":59";
+        String beginDate = requestData.optString("begin_date");
+        String endDate = requestData.optString("end_date");
         String prodId = requestData.optString("id");
         String userName = requestData.optString("user_name");
         String busId = requestData.optString("business_id");
@@ -716,12 +733,44 @@ public class PosAdminService implements Serviceable {
         serv.messageToClient(worker);
 
     }
+    
+    private String getDate(){
+       Calendar cal = Calendar.getInstance();
+       int year = cal.get(Calendar.YEAR);
+       Integer month = cal.get(Calendar.MONTH)+1;
+       Integer day = cal.get(Calendar.DATE);
+       String themonth = month < 10 ? "0" + month : month.toString();
+       String theday = day < 10 ? "0" + day : day.toString();
+       return year + "-" + themonth + "-" +theday; 
+    }
+    
+    private String getTodayBeginDate(){
+        return getDate()+" 00:00:00";
+    }
+    
+    private String getTodayEndDate(){
+        return getDate()+" 23:59:59";
+    }
+    
+    public static void main(String [] args){
+       Calendar cal = Calendar.getInstance();
+       io.out(cal.get(Calendar.DATE));
+       io.out(cal.get(Calendar.MONTH)+1);
+       io.out(cal.get(Calendar.YEAR));
+       
+    }
+    
+    
 
     private void stockHistory(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
-        String beginDate = requestData.optString("begin_date") + ":00";
-        String endDate = requestData.optString("end_date") + ":59";
+        String beginDate = requestData.optString("begin_date");
+        beginDate = beginDate.equals("server_time_begin") ? getTodayBeginDate() : beginDate;
+        String endDate = requestData.optString("end_date");
+        endDate = endDate.equals("server_time_end") ? getTodayEndDate() : endDate;
+        io.out(beginDate);
+        io.out(endDate);
         String prodId = requestData.optString("id");
         String userName = requestData.optString("user_name");
         String busId = requestData.optString("business_id");
@@ -756,7 +805,7 @@ public class PosAdminService implements Serviceable {
         String beginDate = requestData.optString("start_date") + ":00";
         String busId = requestData.optString("business_id");
         String endDate = requestData.optString("end_date") + ":59";
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject data = db.query("SELECT " + column + " FROM " + table + " WHERE "
                 + "BUSINESS_ID = ? AND CREATED >= ? AND CREATED <= ?", busId, beginDate, endDate);
         JSONArray col = data.optJSONArray(column);
@@ -798,7 +847,7 @@ public class PosAdminService implements Serviceable {
         String endDate = requestData.optString("end_date") + " 59";
         JSONObject expData = db.query("SELECT * FROM EXPENSE_DATA WHERE BUSINESS_ID = ? AND CREATED >= ? AND CREATED <= ? ", busId, beginDate, endDate);
         //commissions and taxes are in built expenses
-        Database db1 = new Database("user_server",worker.getSession());
+        Database db1 = new Database("user_server");
         JSONObject settings = db1.query("SELECT * FROM CONF_DATA");
         int commIndex = settings.optJSONArray("CONF_KEY").toList().indexOf("add_comm");
         int taxIndex = settings.optJSONArray("CONF_KEY").toList().indexOf("add_tax");
@@ -822,7 +871,7 @@ public class PosAdminService implements Serviceable {
 
     @Endpoint(name = "profit_and_loss")
     public void profitAndLoss(Server serv, ClientWorker worker) throws JSONException {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String beginDate = requestData.optString("start_date") + "00:00:00";
         String busId = requestData.optString("business_id");
@@ -885,7 +934,7 @@ public class PosAdminService implements Serviceable {
     }
 
     private double getAccountBalance(ClientWorker worker, String table, String column, String filterCol, String posFilter, String negFilter) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String busId = requestData.optString("business_id");
         String beginDate = requestData.optString("start_date"); 
@@ -910,7 +959,7 @@ public class PosAdminService implements Serviceable {
 
     @Endpoint(name = "stock_expiry", shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void stockExpiry(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String busId = requestData.optString("business_id");
         JSONObject data = db.query()
@@ -925,7 +974,7 @@ public class PosAdminService implements Serviceable {
 
     @Endpoint(name = "stock_low", shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void stockLow(Server serv, ClientWorker worker) {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String busId = requestData.optString("business_id");
         JSONObject data = db.query()
@@ -940,10 +989,10 @@ public class PosAdminService implements Serviceable {
 
     @Endpoint(name = "delete_business")
     public void deleteBusinessData(Server serv, ClientWorker worker) throws NonExistentDatabaseException {
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String busId = requestData.optString("business_id");
-        Database users = new Database("user_server", worker.getSession());
+        Database users = new Database("user_server");
         JSONObject data = users.query("SELECT BUSINESS_OWNER FROM BUSINESS_DATA");
         int businesses = data.optJSONArray("BUSINESS_OWNER").length();
         if (businesses < 2) {
@@ -962,7 +1011,7 @@ public class PosAdminService implements Serviceable {
     
     @Endpoint(name="product_categories",shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void loadCategories(Server serv,ClientWorker worker){
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String catType = requestData.optString("category_type");
         String filter = requestData.optString("filter");
@@ -979,7 +1028,7 @@ public class PosAdminService implements Serviceable {
     
     @Endpoint(name="load_products",shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void loadProducts(Server serv,ClientWorker worker) throws JSONException{
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String cat = requestData.optString("category");
         String subCat = requestData.optString("sub_category");
@@ -1001,7 +1050,7 @@ public class PosAdminService implements Serviceable {
         String column = requestData.optString("column");
         String where = requestData.optString("where");
         boolean isSafe = serv.isTableSafe(database, table, column);
-        Database db = new Database(database, worker.getSession());
+        Database db = new Database(database);
         if(isSafe){
             JSONObject data = db.query("SELECT "+column+" FROM "+table+" WHERE "+where+" ");
             worker.setResponseData(data);
@@ -1016,7 +1065,7 @@ public class PosAdminService implements Serviceable {
     
     @Endpoint(name="add_category")
     public void addCategory(Server serv,ClientWorker worker){
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String cat = requestData.optString("category");
         String username = requestData.optString("username");
@@ -1042,7 +1091,7 @@ public class PosAdminService implements Serviceable {
     
     @Endpoint(name="fetch_categories",shareMethodWith = {"pos_sale_service","pos_middle_service"})
     public void fetchCategories(Server serv,ClientWorker worker){
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String username = requestData.optString("username");
         JSONObject data = db.query("SELECT * FROM USER_CATEGORIES WHERE USER_NAME = ?",username);
@@ -1052,7 +1101,7 @@ public class PosAdminService implements Serviceable {
     
     @Endpoint(name="note_cash_received",shareMethodWith = {"pos_middle_service"})
     public void noteCashReceived(Server serv,ClientWorker worker){
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String received = requestData.optString("cash_received");
         String transId = requestData.optString("trans_id");

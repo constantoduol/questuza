@@ -43,7 +43,7 @@ h4 {
 body {
     font-family: Roboto;
     background : rgb(240, 248, 255);
-    padding: 20px;
+    padding: 5px;
 }
 
 .summary {
@@ -69,7 +69,7 @@ body {
     cursor: pointer;
 }
 
-#paginate_navigate {
+.paginate_round_icon {
     border-radius: 100px;
     background-color: lightblue;
 }
@@ -203,8 +203,7 @@ form {
     max-width: 500px;
     border : 1px solid lightblue;
     margin : auto;
-    margin-top : 20px;
-    padding: 30px;
+    padding: 20px;
     border-radius: 5px;
     background: white;
 }
@@ -361,4 +360,8 @@ form {
 
 .modal-content {
     border-radius: 0px;
+}
+
+.handsontableInput {
+    width: auto !important;
 }

@@ -55,7 +55,7 @@ public class PosSaleService implements Serviceable {
     
     @Endpoint(name="transact",shareMethodWith = {"pos_admin_service","pos_middle_service"})
     public synchronized void transact(Server serv,ClientWorker worker) throws JSONException{
-        Database db = new Database(POS_DATA, worker.getSession());
+        Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         JSONArray ids = requestData.optJSONArray("product_ids");
         JSONArray qtys = requestData.optJSONArray("product_qtys");
