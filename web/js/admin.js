@@ -651,7 +651,8 @@ App.prototype.gridEdit = function(ids,columns,headers,values){
                    id : ids[row],
                    old_value : oldValue,
                    new_value : newValue,
-                   column : columns[col]
+                   column : columns[col],
+                   business_type : localStorage.getItem("business_type")
                };
                app.xhr(request,app.dominant_privilege,"save_grid_edit",{
                    load : false,

@@ -548,18 +548,48 @@ public class PosAdminService implements Serviceable {
         serv.messageToClient(worker);
     }
     
+    private void updateProductQty(ClientWorker worker,String prodId){
+        JSONObject request  = worker.getRequestData();
+        String busId = request.optString("business_id");
+        String bType = request.optString("business_type");
+        String productQty = request.optString("new_value");
+        String userName = worker.getSession().getAttribute("username").toString();
+        Database db = new Database(POS_DATA);
+        JSONObject productData = db.query("SELECT * FROM PRODUCT_DATA WHERE ID=?", prodId);
+        Double storedProductQty = Double.parseDouble(productData.optJSONArray("PRODUCT_QTY").optString(0));
+        String productBp = productData.optJSONArray("BP_UNIT_COST").optString(0);
+        String productSp = productData.optJSONArray("SP_UNIT_COST").optString(0);
+        Double newProductQty = Double.parseDouble(productQty);
+        if (storedProductQty > newProductQty) {
+            //reduction in stock
+            Double theQty = storedProductQty - newProductQty;
+            addStock(prodId, busId, theQty.toString(), productBp, productSp, 0, "", "stock_out", bType, db, userName);
+            db.query("UPDATE PRODUCT_DATA SET PRODUCT_QTY = '"+newProductQty+"' WHERE ID ='"+prodId+"'");
+        } else if (newProductQty > storedProductQty) {
+            //increase in stock
+            Double theQty = newProductQty - storedProductQty;
+            addStock(prodId, busId, theQty.toString(), productBp, productSp, 1, "", "stock_in", bType, db, userName);
+            db.query("UPDATE PRODUCT_DATA SET PRODUCT_QTY = '"+newProductQty+"' WHERE ID ='"+prodId+"'");
+        }
+    }
+    
     @Endpoint(name="save_grid_edit")
     public void saveGridEdit(Server serv, ClientWorker worker){
         Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
-        String column = requestData.optString("column");
+        String column = requestData.optString("column").trim();
         String id = requestData.optString("id");
         String newValue = requestData.optString("new_value");
-        db.query()
-                .update("PRODUCT_DATA")
-                .set(""+column+"='"+newValue+"'")
-                .where("ID='"+id+"'")
-                .execute();
+        if(column.equals("PRODUCT_QTY")){
+            updateProductQty(worker, id);
+        }
+        else {
+            db.query()
+                    .update("PRODUCT_DATA")
+                    .set("" + column + "='" + newValue + "'")
+                    .where("ID='" + id + "'")
+                    .execute();
+        }
         worker.setResponseData(Message.SUCCESS);
         serv.messageToClient(worker);
     }

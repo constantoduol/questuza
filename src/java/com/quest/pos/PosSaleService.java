@@ -118,7 +118,8 @@ public class PosSaleService implements Serviceable {
                     newQty = productTotalqty + noOfUnits; //increase the quantity if customer is returning stock
                     narration = narration.equals("") ? "Reversal of sale" : narration;
                     profit = -profit;
-                    db.doInsert("STOCK_DATA", new String[]{transId,busId, prodId, type, bPrice.toString(), cost.toString(), unitsSold.toString(), profit.toString(),tranFlag, narration, "!NOW()",userName});
+                    db.doInsert("STOCK_DATA", new String[]{transId,busId, prodId, type, bPrice.toString(), cost.toString(), 
+                        unitsSold.toString(), profit.toString(),tranFlag, narration, "!NOW()",userName});
                 }
                 
                 if(parentProduct.isEmpty()){

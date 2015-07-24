@@ -215,7 +215,9 @@ App.prototype.paginate = function (options) {
         load_url: app.pages.paginate,
         load_area: "content_area",
         onload: function () {
+            
             $("#paginate_title").html(options.title);
+            
             $("#paginate_print").click(function () {
                 app.print({
                     area: "content_area",
@@ -243,6 +245,15 @@ App.prototype.paginate = function (options) {
                     }
                 });
             });
+            //set up paginate_download
+            $("#paginate_download").click(function(){
+                //set up the first table we find as exportable to excel
+                var tableId = $($("table")[0]).attr("id");
+                var href = $("#paginate_download");
+                return ExcellentExport.excel(href, tableId, options.title);
+                
+            });
+            
             if (options.save_state) {
                 $("#paginate_navigate").click(function () {
                     $("#" + options.save_state_area).html(app.savedState);

@@ -2,7 +2,9 @@
     <div id="paginate_button_area">
         <img src="img/back.png" alt="Go Back" id="paginate_navigate" title="Go Back" class="paginate_round_icon">
         <img src="img/print.png" alt="Print" id="paginate_print" title="Print">
-        <!--<img src="img/download.png" alt="Download" id="paginate_download" title="Download"> -->
+        <a download="download.xls" href="#" onclick="return ExcellentExport.excel(this, $($('table')[0]).attr('id'), 'sheet');">
+            <img src="img/download.png" alt="Download" title="Export to Excel" class="paginate_round_icon"> 
+        </a>
     </div>
     <h3 id="paginate_title"></h3>
     <hr/>

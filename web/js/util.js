@@ -136,8 +136,8 @@ App.prototype.newGrid = function (options) {
         allowInvalid: false,
         afterChange: function (changes, source) {
             if (!changes) return;
-            console.log(changes);
-            if (source === "edit") {
+
+            if (source === "edit" || source === "autofill") {
                 //track edits only
                 $.each(changes,function(x){
                     var row = changes[x][0];

@@ -370,7 +370,6 @@ App.prototype.printReceipt = function (resp) {
 
 
 App.prototype.todaySales = function (username,category) {
-    var cashReceived;
     var request = {
         id: "all",
         user_name: username,
@@ -388,104 +387,107 @@ App.prototype.todaySales = function (username,category) {
             return "SCOPE='cash_received'";
         },
         success : function(resp){
-           cashReceived = resp.response.data;
-        }
-    });
-    
-    
-    app.xhr(request, app.dominant_privilege, "stock_history", {
-        load: true,
-        success: function (data) {
-            var resp = data.response.data;
-            //name,username,narr,time,type
-            app.paginate({
-                title: "Todays Sales",
-                save_state: true,
-                save_state_area: "content_area",
-                onload_handler: app.pages.sale_touch,
-                onload: function () {
-                    var totalQty = 0;
-                    var totalAmount = 0;
-                    var undos = [];
-                    for (var index = 0; index < resp.TRAN_FLAG.length; index++) {
-                        var flag = resp.TRAN_FLAG[index];
-                        var undo = "<a href='#' onclick='app.undoSale(\"" + resp.PRODUCT_ID[index] + "\",\"" + resp.STOCK_QTY[index] + "\")' \n\
+           var cashReceived = resp.response.data;
+            //do nothing until cash received is ready 
+            app.xhr(request, app.dominant_privilege, "stock_history", {
+                load: true,
+                success: function (data) {
+                    var resp = data.response.data;
+                    //name,username,narr,time,type
+                    app.paginate({
+                        title: "Todays Sales",
+                        save_state: true,
+                        save_state_area: "content_area",
+                        onload_handler: app.pages.sale_touch,
+                        onload: function () {
+                            var totalQty = 0;
+                            var totalAmount = 0;
+                            var undos = [];
+                            for (var index = 0; index < resp.TRAN_FLAG.length; index++) {
+                                var flag = resp.TRAN_FLAG[index];
+                                var undo = "<a href='#' onclick='app.undoSale(\"" + resp.PRODUCT_ID[index] + "\",\"" + resp.STOCK_QTY[index] + "\")' \n\
                         			title='Undo sale'>Undo Sale</a>";
-                        var color, span, qty, amount;
-                        if (flag === "sale_to_customer") {
-                            color = "red";
-                            span = "Sale To Customer";
-                            app.getSetting("enable_undo_sales") === "1" ? undos.push(undo) : undos.push("");
-                            qty = parseFloat(resp.STOCK_QTY[index]);
-                            amount = parseFloat(resp.STOCK_COST_SP[index]);
-                        }
-                        else if (flag === "reversal_of_sale") {
-                            color = "green";
-                            span = "Customer Returned Stock ";
-                            undos.push("");
-                            qty = -parseFloat(resp.STOCK_QTY[index]);
-                            amount = -parseFloat(resp.STOCK_COST_SP[index]);
-                        }
-                        else {
-                            //this is a different flag e.g new_stock
-                            //dont show it
-                            resp.PRODUCT_NAME.splice(index, 1);
-                            resp.TRAN_TYPE.splice(index, 1);
-                            resp.STOCK_QTY.splice(index, 1);
-                            resp.STOCK_COST_SP.splice(index, 1);
-                            resp.NARRATION.splice(index, 1);
-                            resp.CREATED.splice(index, 1);
-                            resp.TRAN_FLAG.splice(index, 1);
-                            index--; //we do this to filter out stock increases from sales
-                            continue;
-                        }
+                                var color, span, qty, amount;
+                                if (flag === "sale_to_customer") {
+                                    color = "red";
+                                    span = "Sale To Customer";
+                                    app.getSetting("enable_undo_sales") === "1" ? undos.push(undo) : undos.push("");
+                                    qty = parseFloat(resp.STOCK_QTY[index]);
+                                    amount = parseFloat(resp.STOCK_COST_SP[index]);
+                                }
+                                else if (flag === "reversal_of_sale") {
+                                    color = "green";
+                                    span = "Customer Returned Stock ";
+                                    undos.push("");
+                                    qty = -parseFloat(resp.STOCK_QTY[index]);
+                                    amount = -parseFloat(resp.STOCK_COST_SP[index]);
+                                }
+                                else {
+                                    //this is a different flag e.g new_stock
+                                    //dont show it
+                                    resp.PRODUCT_NAME.splice(index, 1);
+                                    resp.TRAN_TYPE.splice(index, 1);
+                                    resp.STOCK_QTY.splice(index, 1);
+                                    resp.STOCK_COST_SP.splice(index, 1);
+                                    resp.NARRATION.splice(index, 1);
+                                    resp.CREATED.splice(index, 1);
+                                    resp.TRAN_FLAG.splice(index, 1);
+                                    index--; //we do this to filter out stock increases from sales
+                                    continue;
+                                }
 
-                        resp.TRAN_TYPE[index] = "<span style='color : " + color + "'>" + span + "<span>";
-                        var time = new Date(resp.CREATED[index]).toLocaleTimeString();
-                        resp.CREATED[index] = time;
-                        resp.STOCK_COST_SP[index] = app.formatMoney(amount);
-                        resp.STOCK_QTY[index] = qty;
-                        totalQty = totalQty + qty;
-                        totalAmount = totalAmount + amount;
-                    }
-                    resp.STOCK_COST_SP.push("<b>" + app.formatMoney(totalAmount) + "</b>");
-                    resp.STOCK_QTY.push("<b>" + totalQty + "</b>");
-                    resp.PRODUCT_NAME.push("");
-                    resp.TRAN_TYPE.push("<b>Totals</b>");
-                    resp.NARRATION.push("");
-                    resp.CREATED.push("");
-                    app.ui.table({
-                        id_to_append: "paginate_body",
-                        headers: ["Product Name", "Entry Type", "Sale Qty", "Amount Received", "Narration", "Entry Time", "Undo Sale","Cash Received"],
-                        values: [resp.PRODUCT_NAME, resp.TRAN_TYPE, resp.STOCK_QTY, resp.STOCK_COST_SP, resp.NARRATION, resp.CREATED, undos,resp.ID],
-                        include_nums: true,
-                        style: "",
-                        mobile_collapse: true,
-                        summarize: {
-                            cols: [4],
-                            lengths: [80]
-                        },
-                        transform : {
-                            7 : function(value,index){
-                                if(app.dominant_privilege !== "pos_middle_service") return;
-                                var received = cashReceived.META_ID.indexOf(value) > -1 ? "Yes" : "No";
-                                var href = $("<a href='#'>"+received+"</a>");
-                                href.click(function(){
-                                    var current = this.innerHTML;
-                                    if(current === "Yes") return; //this was added because clients dont want somebody to reverse this
-                                    var isReceived = current === "Yes" ? "No" : "Yes";
-                                    this.innerHTML = isReceived;
-                                    app.xhr({trans_id : value,cash_received :isReceived},app.dominant_privilege,"note_cash_received",{
-                                        load : false
-                                    });
-                                });
-                                return href;
+                                resp.TRAN_TYPE[index] = "<span style='color : " + color + "'>" + span + "<span>";
+                                var time = new Date(resp.CREATED[index]).toLocaleTimeString();
+                                resp.CREATED[index] = time;
+                                resp.STOCK_COST_SP[index] = app.formatMoney(amount);
+                                resp.STOCK_QTY[index] = qty;
+                                totalQty = totalQty + qty;
+                                totalAmount = totalAmount + amount;
                             }
+                            resp.STOCK_COST_SP.push("<b>" + app.formatMoney(totalAmount) + "</b>");
+                            resp.STOCK_QTY.push("<b>" + totalQty + "</b>");
+                            resp.PRODUCT_NAME.push("");
+                            resp.TRAN_TYPE.push("<b>Totals</b>");
+                            resp.NARRATION.push("");
+                            resp.CREATED.push("");
+                            app.ui.table({
+                                id_to_append: "paginate_body",
+                                headers: ["Product Name", "Entry Type", "Sale Qty", "Amount Received", "Narration", "Entry Time", "Undo Sale", "Cash Received"],
+                                values: [resp.PRODUCT_NAME, resp.TRAN_TYPE, resp.STOCK_QTY, resp.STOCK_COST_SP, resp.NARRATION, resp.CREATED, undos, resp.ID],
+                                include_nums: true,
+                                style: "",
+                                mobile_collapse: true,
+                                summarize: {
+                                    cols: [4],
+                                    lengths: [80]
+                                },
+                                transform: {
+                                    7: function (value, index) {
+                                        if (app.dominant_privilege !== "pos_middle_service")
+                                            return;
+                                        var received = cashReceived.META_ID.indexOf(value) > -1 ? "Yes" : "No";
+                                        var href = $("<a href='#'>" + received + "</a>");
+                                        href.click(function () {
+                                            var current = this.innerHTML;
+                                            if (current === "Yes")
+                                                return; //this was added because clients dont want somebody to reverse this
+                                            var isReceived = current === "Yes" ? "No" : "Yes";
+                                            this.innerHTML = isReceived;
+                                            app.xhr({trans_id: value, cash_received: isReceived}, app.dominant_privilege, "note_cash_received", {
+                                                load: false
+                                            });
+                                        });
+                                        return href;
+                                    }
+                                }
+                            });
                         }
                     });
                 }
             });
         }
     });
+    
+     
 };
 
