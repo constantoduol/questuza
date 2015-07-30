@@ -35,7 +35,8 @@ import java.util.logging.Logger;
 @Models(models = {
     @Model(
             database = "pos_data", table = "PRODUCT_DATA",
-            columns = {"ID VARCHAR(10) PRIMARY KEY",
+            columns = {
+                "ID VARCHAR(10) PRIMARY KEY",
                 "BUSINESS_ID VARCHAR(20)",
                 "PRODUCT_NAME TEXT",
                 "PRODUCT_QTY FLOAT",
@@ -98,7 +99,8 @@ import java.util.logging.Logger;
             }),
     @Model(
             database = "pos_data", table = "SUPPLIER_DATA",
-            columns = {"ID VARCHAR(10) PRIMARY KEY",
+            columns = {
+                "ID VARCHAR(10) PRIMARY KEY",
                 "BUSINESS_ID VARCHAR(20)",
                 "SUPPLIER_NAME TEXT",
                 "COUNTRY TEXT",
@@ -799,8 +801,6 @@ public class PosAdminService implements Serviceable {
         beginDate = beginDate.equals("server_time_begin") ? getTodayBeginDate() : beginDate;
         String endDate = requestData.optString("end_date");
         endDate = endDate.equals("server_time_end") ? getTodayEndDate() : endDate;
-        io.out(beginDate);
-        io.out(endDate);
         String prodId = requestData.optString("id");
         String userName = requestData.optString("user_name");
         String busId = requestData.optString("business_id");

@@ -205,7 +205,8 @@ App.prototype.createUser = function () {
         group: role,
         privs: priv,
         real_name : data.real_name.value,
-        password : password
+        password : password,
+        user_interface : interface
     };
     app.xhr(requestData, "open_data_service", "create_account", {
         load: true,
@@ -218,7 +219,7 @@ App.prototype.createUser = function () {
                     app.showMessage(app.context.create_user);
                 }
             }
-            else if (data.response.type === "exception") {
+            else if (data.response.data === "fail") {
                 app.showMessage(data.response.reason);
             }
             //save the local data
