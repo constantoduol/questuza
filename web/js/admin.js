@@ -197,7 +197,6 @@ App.prototype.createUser = function () {
         priv = ["pos_sale_service"];
     }
     var pin = Math.floor(Math.random()*100000);
-    var interface = app.getSetting("user_interface");
     var password = interface === "touch" ? pin : "";
     var requestData = {
         name: data.email_address.value,
@@ -206,7 +205,7 @@ App.prototype.createUser = function () {
         privs: priv,
         real_name : data.real_name.value,
         password : password,
-        user_interface : interface
+        user_interface : "touch"
     };
     app.xhr(requestData, "open_data_service", "create_account", {
         load: true,
@@ -234,10 +233,10 @@ App.prototype.resetPassword = function () {
     var data = app.getFormData(app.context.user);
     if (!data)
         return;
-    var interface = app.getSetting("user_interface");
+    var interface = "touch";
     var requestData = {
         name: data.email_address.value,
-        user_interface : interface
+        user_interface : "touch"
     };
     app.xhr(requestData, "user_service", "reset_pass", {
         load: true,
@@ -843,8 +842,8 @@ App.prototype.goodsStockHistory = function () {
                         totalSP = totalSP + amountSP;
                         totalBP = totalBP + amountBP;
                         profits = profits + profit;
-                        profit > 0 ? costOfSales = costOfSales - amountSP : 0;
-                        profit > 0 ? costOfGoods = costOfGoods - amountBP : 0;
+                        flag === "sale_to_customer" ? costOfSales = costOfSales - amountSP : 0;
+                        flag === "sale_to_customer" ? costOfGoods = costOfGoods - amountBP : 0;
                     });
                     resp.STOCK_COST_BP.push("<b>" + app.formatMoney(totalBP) + "</b>");
                     resp.STOCK_COST_SP.push("<b>" + app.formatMoney(totalSP) + "</b>");

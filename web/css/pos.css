@@ -145,13 +145,14 @@ body {
 }
 
 .card {
-    width : 90%;
+    width : 98%;
     border : 1px solid lightblue;
     margin : auto;
     margin-top : 20px;
     padding: 10px;
     border-radius: 5px;
     background: white;
+    font-size : 12px;
 }
 
 .card .input-group img {

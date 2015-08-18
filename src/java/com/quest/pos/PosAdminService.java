@@ -783,16 +783,7 @@ public class PosAdminService implements Serviceable {
     private String getTodayEndDate(){
         return getDate()+" 23:59:59";
     }
-    
-    public static void main(String [] args){
-       Calendar cal = Calendar.getInstance();
-       io.out(cal.get(Calendar.DATE));
-       io.out(cal.get(Calendar.MONTH)+1);
-       io.out(cal.get(Calendar.YEAR));
-       
-    }
-    
-    
+        
 
     private void stockHistory(Server serv, ClientWorker worker) {
         Database db = new Database(POS_DATA);

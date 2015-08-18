@@ -1,5 +1,5 @@
 App.prototype.logout = function () {
-    var index = app.getSetting("user_interface") === "touch" ? "index_touch.html" : "index.html";
+    var index =  "index.html";
     var requestData = {
         user_name: app.appData.formData.login.current_user.name
     };
@@ -69,7 +69,7 @@ App.prototype.login = function () {
     var requestData = {
         username: data.username.value,
         password: data.password.value,
-        user_interface : app.getSetting("user_interface")
+        user_interface : "touch"
     };
     app.xhr(requestData, "open_data_service", "login", {
         load: true,
@@ -77,7 +77,7 @@ App.prototype.login = function () {
             var l = resp.response.data;
             var request = {
                 username: l.user,
-                user_interface: app.getSetting("user_interface") 
+                user_interface: "touch"
             };
             app.xhr(request,"open_data_service","business_info",{
                 load : true,
@@ -111,7 +111,7 @@ App.prototype.navigate = function (privileges, buss) {
     var adminIndex = privileges.indexOf("pos_admin_service");
     var saleIndex = privileges.indexOf("pos_sale_service");
     var interIndex = privileges.indexOf("pos_middle_service");
-    var saleUrl = app.getSetting("user_interface") === "touch" ? "sale_touch.html" : "sale.html";
+    var saleUrl = "sale.html";
     //if you have more than one business id, navigate to the correct one
     if (adminIndex > -1 && saleIndex > -1) {
         //you have to select because you have both privileges

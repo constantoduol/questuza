@@ -17,7 +17,7 @@
         </init-param>
         <init-param>
             <param-name>default-password</param-name>
-            <param-value>00000</param-value>
+            <param-value>0112358</param-value>
         </init-param>
          <init-param>
             <param-name>sendgrid-username</param-name>

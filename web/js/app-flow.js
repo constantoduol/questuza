@@ -7,41 +7,41 @@
 
 AppData.prototype.formData = {
     onload: AppData.prototype.onload,
+//    login: {
+//        fields: {
+//            username: {required: true, message: "Email address is required"},
+//            password: {required: true, message: "Password is required"}
+//        },
+//        error_space: "error_space_login",
+//        load_area: "error_space_login",
+//        error_message: "Well,it seems the server is unavailable",
+//        businesss_required: "Both email and business name are required!",
+//        password_reset_success: "An email has been sent to your address, use it to reset your password",
+//        current_user: {
+//            name: localStorage.getItem("current_user"),
+//            host: localStorage.getItem("host"),
+//            business_id: localStorage.getItem("business_id"),
+//            business_type: localStorage.getItem("business_type"),
+//            dominantPrivilege: function () {
+//                var privs = localStorage.getItem("privileges");
+//                if (privs && privs.indexOf("pos_admin_service") > -1) {
+//                    return "pos_admin_service";
+//                }
+//                else if (privs && privs.indexOf("pos_sale_service") > -1) {
+//                    return "pos_sale_service";
+//                }
+//                else if (privs && privs.indexOf("pos_middle_service") > -1) {
+//                    return "pos_middle_service";
+//                }
+//            }
+//        },
+//        messages: {
+//            invalidpass: "The password you entered is invalid",
+//            notexist: "User account does not exist",
+//            disabled: "User account has been disabled"
+//        }
+//    },
     login: {
-        fields: {
-            username: {required: true, message: "Email address is required"},
-            password: {required: true, message: "Password is required"}
-        },
-        error_space: "error_space_login",
-        load_area: "error_space_login",
-        error_message: "Well,it seems the server is unavailable",
-        businesss_required: "Both email and business name are required!",
-        password_reset_success: "An email has been sent to your address, use it to reset your password",
-        current_user: {
-            name: localStorage.getItem("current_user"),
-            host: localStorage.getItem("host"),
-            business_id: localStorage.getItem("business_id"),
-            business_type: localStorage.getItem("business_type"),
-            dominantPrivilege: function () {
-                var privs = localStorage.getItem("privileges");
-                if (privs && privs.indexOf("pos_admin_service") > -1) {
-                    return "pos_admin_service";
-                }
-                else if (privs && privs.indexOf("pos_sale_service") > -1) {
-                    return "pos_sale_service";
-                }
-                else if (privs && privs.indexOf("pos_middle_service") > -1) {
-                    return "pos_middle_service";
-                }
-            }
-        },
-        messages: {
-            invalidpass: "The password you entered is invalid",
-            notexist: "User account does not exist",
-            disabled: "User account has been disabled"
-        }
-    },
-    login_touch: {
         fields: {
             password: {required: true, message: "PIN is required"},
             username: {required: false}//dLhkCJaBox2jIDpJKfHzsIxV1SGiNqWNh+ZWDtYrZDBgaweQQExDLcn66d0mExrECCtwnzT+l/fky7OR2Qr6iw==
@@ -106,23 +106,6 @@ AppData.prototype.formData = {
             false: "The old password entered is invalid"
         }
     },
-    sale_touch: {
-        product: {
-            fields: {
-            },
-            help_url: "/help/sale.html"
-        },
-        error_space: "error_space_sale",
-        load_area: "error_space_sale",
-        error_message: "Well,it seems the server is unavailable",
-        commit_sale: "Do you wish to commit transaction?",
-        invalid_qty: "An invalid quantity has been specified for this item",
-        insufficient_stock: "There is not sufficient stock to proceed with the sale",
-        no_product_selected: "No products have been selected for sale",
-        transact_fail: "Transaction failed",
-        transact_success: "Transaction was successful",
-        reverse_success: "Transaction reversed successfully"
-    },
     sale: {
         product: {
             fields: {
@@ -146,7 +129,8 @@ AppData.prototype.formData = {
                             $("#commit_sale_btn").focus();
 
                         }
-                    }}
+                    }
+               }
             },
             help_url: "/help/sale.html"
         },
@@ -161,6 +145,44 @@ AppData.prototype.formData = {
         transact_success: "Transaction was successful",
         reverse_success: "Transaction reversed successfully"
     },
+//    sale: {
+//        product: {
+//            fields: {
+//                search_products: {
+//                    autocomplete: {
+//                        id: "search_products",
+//                        database: "pos_data",
+//                        table: "PRODUCT_DATA",
+//                        column: "*",
+//                        where: function () {
+//                            var id = app.appData.formData.login.current_user.business_id;
+//                            return "PRODUCT_NAME  LIKE '" + $("#search_products").val() + "%' AND BUSINESS_ID = '" + id + "'";
+//                        },
+//                        orderby: "PRODUCT_NAME ASC",
+//                        limit: 10,
+//                        key: "PRODUCT_NAME",
+//                        data: {},
+//                        selected: [],
+//                        after: function (data, index) {
+//                            app.sale(data, index);
+//                            $("#commit_sale_btn").focus();
+//
+//                        }
+//                    }}
+//            },
+//            help_url: "/help/sale.html"
+//        },
+//        error_space: "error_space_sale",
+//        load_area: "error_space_sale",
+//        error_message: "Well,it seems the server is unavailable",
+//        commit_sale: "Do you wish to commit transaction?",
+//        invalid_qty: "An invalid quantity has been specified for this item",
+//        insufficient_stock: "There is not sufficient stock to proceed with the sale",
+//        no_product_selected: "No products have been selected for sale",
+//        transact_fail: "Transaction failed",
+//        transact_success: "Transaction was successful",
+//        reverse_success: "Transaction reversed successfully"
+//    },
     admin: {
         user: {
             fields: {

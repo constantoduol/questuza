@@ -7,7 +7,7 @@ and open the template in the editor.
 <html>
     <head>
         <title>Sale</title>
-         <link rel='shortcut icon' type='image/x-icon' href='img/favicon.png' />
+        <link rel='shortcut icon' type='image/x-icon' href='img/favicon.png' />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
         <meta name="description" content="quest pico" />   
         <link href='css/bootstrap.min.css' rel='stylesheet' type='text/css'>
@@ -22,41 +22,42 @@ and open the template in the editor.
         <script type="text/javascript" src="js/jquery.hotkeys.js"></script>
         <script type="text/javascript" src="js/ui.js"></script>
         <script type="text/javascript" src="js/onload.js"></script>
+	<script type="text/javascript" src="js/excel.js"></script>
         <script type="text/javascript" src="js/app-flow.js"></script>
         <script type="text/javascript" src="js/app.js"></script>
         <script type="text/javascript" src="js/admin.js"></script>
         <script type="text/javascript" src="js/sale.js"></script>
+        <script type="text/javascript" src="js/lookups.js"></script>
         <script type="text/javascript" src="js/util.js"></script>
         <script type="text/javascript" src="js/printThis.js"></script>
-         <script type="text/javascript" src="js/account.js"></script>
+        <script type="text/javascript" src="js/account.js"></script>
        
       
     </head>
-    <body>
-        <div id="content_area" style='margin-top: 20px'>
-          <div class="card" >
-            <div class="sigin">
-                <a href="#" id="logout_link">Sign out</a> 
+    <body style="padding:0px">
+        <div id="content_area" style='margin-top: 0px'>
+            <div class="card_touch" id="menu_card">
+                <a href="#" id="logout_link" class="btn btn_touch" title="Sign Out" style="background-color: rgba(255, 0, 0, 0.6)">Sign out</a> 
+                <a href="#" id="home_link" class="btn btn_touch">Home</a> 
+                 <a href="#" id="todays_sale_link" class="btn btn_touch">T/Sales</a> 
+                  <a href="#" id="users_report_link" class="btn btn_touch" style="visibility: hidden">U/Reports</a> 
+                <a id="total_qty" class="change_touch" style="visibility: hidden">0</a>
+                <a id="total_amount" class="change_touch" style="visibility: hidden" >0</a>
+                <a href="#" id="commit_link" class="btn btn_touch" style="visibility:  hidden">Commit</a> 
+                <a href="#" id="clear_sale_link" class="btn btn_touch" style="visibility:  hidden">Clear Sale</a>
             </div>
-            <h3>Sale</h3>
-            <div class="input-group">
-                <input type="text" class="form-control" id="search_products" placeholder="Search Products">
-                <div class="input-group-addon search" id="search_link"><img src="img/search.png" alt="Search"></div>
-            </div>
+           
+          <div class="card_touch" id="product_category_card" style="overflow: auto">
             <div id="error_space_sale" class="error" ></div>
-              <div id="sale_area"></div>
-            <div class="input-group button_area">
-                <input type="button" id="commit_sale_btn" value="Commit Sale" class="btn"/>
-                <input type="button" id="clear_sale_btn" value="Clear Sale" class="btn"/>
+            <table id="category_area" >
+                
+            </table>
+            <div id="product_display_area" >
+                
             </div>
-             
-            <hr/>
-            <h3>Stock Tracking</h3>
-            <div class="input-group button_area">
-                <input type="button" id="todays_sale_btn" value="Today's Sales" class="btn"/>
-                <input type="button" id="stock_expiry_btn" value="Stock Expiry" class="btn"/>
-                <input type="button" id="stock_low_btn" value="Stock Low" class="btn"/>
-            </div>
+          </div>
+        <div class="card_touch" id="current_sale_card"  style="overflow: auto">
+           
           </div>
         </div>
     </body>
