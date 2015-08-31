@@ -1,4 +1,3 @@
-
 App.prototype.brand = function(){
   var html = "This product is a trademark of Quest Pico at <a href='http://www.questpico.com'>www.questpico.com</a><br/>Talk to us today at <a href='mailto:info@questpico.com'>info@questpico.com</a>";
   app.ui.modal(html,"About",{
@@ -45,59 +44,55 @@ App.prototype.activateProduct = function(){
     });
 };
 
-App.prototype.settings = function () {
+App.prototype.saveSettings = function(){
+    var data = app.getFormData(app.context.settings);
+    if (!data) return;
+    var request = {};
+    $.each(app.settings,function(key){
+        request[key] = data[key].value;
+    });
+    app.xhr(request, "open_data_service", "save_settings", {
+        load: false,
+        success: function (resp) {
+            var r = resp.response.data;
+            if (r === "success") {
+                alert("Settings saved successfully");
+            }
+            else if (r === "fail") {
+                alert(resp.response.reason);
+            }
+        }
+    });
+};
+
+
+App.prototype.loadSettings = function () {
     app.paginate({
         title: "Settings",
         save_state: true,
         save_state_area: "content_area",
         onload_handler: app.pages.business,
         onload: function () {
-            app.loadPage({
-                load_url: app.pages.settings,
-                load_area: "paginate_body",
-                onload: function () {
-                    $("#paginate_print").remove();
-                    app.xhr({}, "open_data_service", "fetch_settings", {
-                        load: false,
-                        success: function (resp) {
-                            var r = resp.response.data;
-                            $.each(r.CONF_KEY,function(x){
-                                $("#"+r.CONF_KEY[x]).val(r.CONF_VALUE[x]);
-                            });
-                        }
+            $("#paginate_print").remove();
+            app.context.settings.fields =  app.settings;
+            var settingsArea = $("<div id='settings_area'>");
+            $("#paginate_body").append(settingsArea);
+            //render settings from app.settings
+            $.each(app.settings, function (setting) {
+                app.renderDom(app.settings[setting], settingsArea);
+            });
+            app.xhr({}, "open_data_service", "fetch_settings", {
+                load: false,
+                success: function (resp) {
+                    var r = resp.response.data;
+                    $.each(r.CONF_KEY, function (x) {
+                        $("#" + r.CONF_KEY[x]).val(r.CONF_VALUE[x]);
                     });
-                    
-                    $("#save_settings_btn").click(function(){
-                        var data = app.getFormData(app.context.settings);
-                        if(!data) return;
-                        var request = {
-                            enable_undo_sales : data.enable_undo_sales.value,
-                            add_tax : data.add_tax.value,
-                            add_comm : data.add_comm.value,
-                            add_purchases : data.add_purchases.value,
-                            track_stock : data.track_stock.value,
-                            user_interface : data.user_interface.value
-                        };
-                        app.xhr(request,"open_data_service","save_settings",{
-                            load : false,
-                            success : function(resp){
-                                var r = resp.response.data;
-                                if(r === "success"){
-                                    alert("Settings saved successfully");
-                                }
-                                else if(r === "fail"){
-                                    alert(resp.response.reason);
-                                }
-                            }
-                        });
-                    });
-
                 }
             });
         }
     });
 };
-
 
 
 
@@ -696,8 +691,8 @@ App.prototype.allProducts = function (handler) {
                     });
                     
                     if (bType === "goods") {
-                        headers = ["Product Name", "Category","S/Category", "BP/Unit", "SP/Unit", "Available Qty", "Reminder Limit", "Date Created", "Expiry Date"];
-                        values = [resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.BP_UNIT_COST, resp.SP_UNIT_COST, resp.PRODUCT_QTY,
+                        headers = ["Code","Product Name", "Category","S/Category", "BP/Unit", "SP/Unit", "Available Qty", "Reminder Limit", "Date Created", "Expiry Date"];
+                        values = [resp.PRODUCT_CODE,resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.BP_UNIT_COST, resp.SP_UNIT_COST, resp.PRODUCT_QTY,
                             resp.PRODUCT_REMIND_LIMIT, resp.CREATED, resp.PRODUCT_EXPIRY_DATE];
                         columns = ["PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "BP_UNIT_COST", "SP_UNIT_COST","PRODUCT_QTY",
                             "PRODUCT_REMIND_LIMIT", "CREATED","PRODUCT_EXPIRY_DATE"];
@@ -705,17 +700,17 @@ App.prototype.allProducts = function (handler) {
                     }
                     else if (bType === "services") {
                         if (app.getSetting("track_stock") === "1") {
-                            headers = ["Product Name", "Category","S/Category", "SP/Unit","Available Qty", "Date Created"];
-                            values = [resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.SP_UNIT_COST, 
+                            headers = ["Code","Product Name", "Category","S/Category", "SP/Unit","Available Qty", "Date Created"];
+                            values = [resp.PRODUCT_CODE,resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.SP_UNIT_COST, 
                                 resp.PRODUCT_QTY, resp.CREATED];
-                            columns = ["PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "SP_UNIT_COST", 
+                            columns = ["PRODUCT_CODE","PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "SP_UNIT_COST", 
                                 "PRODUCT_QTY","CREATED"];
                             
                         }
                         else {
-                            headers = ["Product Name", "Category","S/Category" ,"SP/Unit", "Date Created"];
-                            values = [resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.SP_UNIT_COST, resp.CREATED];
-                            columns = ["PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "SP_UNIT_COST", "CREATED"];
+                            headers = ["Code","Product Name", "Category","S/Category" ,"SP/Unit", "Date Created"];
+                            values = [resp.PRODUCT_CODE,resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.SP_UNIT_COST, resp.CREATED];
+                            columns = ["PRODUCT_CODE","PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "SP_UNIT_COST", "CREATED"];
                         }
                     }
                      app.ui.table({
@@ -726,7 +721,7 @@ App.prototype.allProducts = function (handler) {
                         style : "",
                         mobile_collapse : true,
                         transform : {
-                            0: function(value,index){
+                            1: function(value,index){
                                 return "<a href='#' id=item_select_" + index + ">" + value + "</a>";
                             }
                         }

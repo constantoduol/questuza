@@ -315,7 +315,6 @@ form {
 }
 
 .btn_touch {
-  padding: 10px;
   font-size: 16px;
   border-radius: 0px;
 }
@@ -343,10 +342,12 @@ form {
 }
 
 .change_touch {
-   font-size: 30px;
-  padding: 10px;
-  /* border-radius: 5px; */
-  border: 2px solid rgb(173, 216, 230);
+  font-size: 24px;
+  color : black;
+  padding : 5px;
+  background-color: white;
+  border:1px solid #1d8be8;
+  
 }
 
 #menu_card a {

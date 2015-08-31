@@ -136,16 +136,7 @@ AppData.prototype.onload = {
         });
 
         $("#clear_sale_link").click(function () {
-            $("#category_area").html("");
-            $("#product_display_area").html("");
-            $("#current_sale_card").html("");
-            $("#commit_link").css("visibility", "hidden");
-            $("#total_qty").css("visibility", "hidden");
-            $("#total_amount").css("visibility", "hidden");
-            $("#clear_sale_link").css("visibility", "hidden");
-            $("#total_qty").html("0");
-            $("#total_amount").html("0.00");
-            app.getSetting("user_interface") === "desktop" ? app.loadSaleSearch() :  app.loadCategories("category_area", "category");
+            app.clearSale();
         });
 
         $("#commit_link").click(app.commitSale);
@@ -406,7 +397,7 @@ AppData.prototype.onload = {
             app.saveBusiness("delete");
         });
 
-        $("#settings_business_btn").click(app.settings);
+        $("#settings_business_btn").click(app.loadSettings);
 
         $("#country").html("");
         $.each(app.nations, function (index) {

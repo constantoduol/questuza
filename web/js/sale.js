@@ -98,11 +98,6 @@ App.prototype.loadProducts = function(category,sub_category){
         success : function(resp){
             var p = resp.response.data.categorized_products;
             var a = resp.response.data.all_products;
-            //show the relevant buttons
-            $("#commit_link").css("visibility", "visible");
-            $("#total_qty").css("visibility", "visible");
-            $("#total_amount").css("visibility", "visible");
-            $("#clear_sale_link").css("visibility", "visible");
             $("#category_area").html("");
             $("#product_display_area").html("");
             app.ui.table({
@@ -114,76 +109,15 @@ App.prototype.loadProducts = function(category,sub_category){
                 class : "table-striped",
                 mobile_collapse: true,
                 onRowClick : function(values,event){
-                   //put the product in the sale area
+                   //put the product in the sale area;
                    var tr = event.currentTarget;
                    var x = parseInt(tr.firstChild.innerHTML);
-                   x--;
-                   var saleArea = $("#sale_summary");
                    var IDS = $.extend(true, [], p.ID);
-                   if(!saleArea[0]){
-                        app.ui.table({
-                            id: "sale_summary",
-                            id_to_append: "current_sale_card",
-                            headers: ["Name", "Quantity","Price", "Subtotal","Remove"],
-                            values: [[values[0][x]],[1],[values[1][x]], [values[1][x]],[IDS[x]]],
-                            include_nums: false,
-                            style: "font-size:20px",
-                            class: "table-striped",
-                            mobile_collapse: true,
-                            transform: {
-                                0: function(value){
-                                    return "<span id=prod_"+IDS[x]+">"+value+"</span>";
-                                },
-                                1 : function(value){;
-                                    return "<span id=qty_"+IDS[x]+" class='qtys'>"+value+"</span>";
-                                },
-                                2 : function(value){
-                                    return "<span id=price_"+IDS[x]+">"+app.formatMoney(value)+"</span>";
-                                },
-                                3: function (value) {
-                                    return "<span id=sub_"+IDS[x]+" class='subs'>"+app.formatMoney(value)+"</span>";
-                                },
-                                4 : function(){
-                                    var img = $("<img src='img/cancel.png' style='height:30px;background:red'>");
-                                    img.click(function(){
-                                        img.parent().parent().remove();
-                                        app.calculateTotals();
-                                    });
-                                    return img;
-                                }
-                            }
-                        }); 
-                   }
-                   else {
-                      var id = p.ID[x];
-                      var prod = $("#prod_"+id);
-                      if(!prod[0]) {
-                          var prodSpan = "<span id='prod_"+id+"'>"+values[0][x]+"</span>";
-                          var qtySpan = "<span id=qty_"+id+" class='qtys'>1</span>";
-                          var priceSpan = "<span id=price_"+id+">"+app.formatMoney(values[1][x])+"</span>";
-                          var subSpan = "<span id=sub_"+id+" class='subs'>"+app.formatMoney(values[1][x])+"</span>";
-                          var img = $("<img src='img/cancel.png' style='height:30px;background:red'>");
-                          var tr = $("<tr>");
-                          img.click(function(){
-                              img.parent().parent().remove();
-                              app.calculateTotals();
-                          });
-                          tr.append("<td>"+prodSpan+"</td><td>"+qtySpan+"</td><td>"+priceSpan+"</td><td>"+subSpan+"</td>");
-                          var td = $("<td>");
-                          td.append(img);
-                          tr.append(td);
-                          saleArea.append(tr);
-                      }
-                      else {
-                        var currQty = parseInt($("#qty_"+id).html());
-                        currQty++;
-                        $("#qty_"+id).html(currQty);
-                        var subTotal = parseFloat(p.SP_UNIT_COST[x].replace(",",""))*currQty;
-                        $("#sub_"+id).html(app.formatMoney(subTotal));
-                        
-                      }
-                   }
-                   app.calculateTotals();
+                   app.sale({
+                        data: values,
+                        index: --x,
+                        ids: IDS
+                    });
                 },
                 transform : {
                     1 : function(value){
@@ -193,7 +127,8 @@ App.prototype.loadProducts = function(category,sub_category){
                         var id = p.ID[index];
                         var parentId = !p.PRODUCT_PARENT[index]  ? "" : p.PRODUCT_PARENT[index];
                         if(parentId.length > 0){
-                           value = a.PRODUCT_QTY[a.ID.indexOf(parentId)]; 
+                           value = a.PRODUCT_QTY[a.ID.indexOf(parentId)]; //search the quantity of the parent
+                           //product from all stock
                         }
                         return "<span id='stock_"+id+"'>"+value+"</span>";
                     }
@@ -276,10 +211,13 @@ App.prototype.commitSale = function () {
                 success: function (data) {
                     var resp = data.response.data;
                     if (resp.status === "success") {
-                        //well transaction successful
+                        //transaction was successful
+                        var rCount = app.getSetting("no_of_receipts");
+                        var count = !rCount ? 1 : parseInt(rCount);
                         if (app.platform === "web") {
-                            app.printReceipt(resp);
-                            app.printReceipt(resp);
+                            for(var x = 0; x < count; x++){
+                                app.printReceipt(resp);
+                            }
                         }
                         $("#clear_sale_link").click();
                         app.showMessage(app.context.transact_success);
@@ -341,9 +279,9 @@ App.prototype.generateReceipt = function () {
     recValues[2].push("<b>" + app.formatMoney(totalCost) + "</b>");
     var bName = localStorage.getItem("business_name");
     var header = "<div><h3>" + bName + "</h3></div>";
-    var receiptHeader = app.getBusinessExtra(0);
+    var receiptHeader = !app.getSetting("receipt_header") ? "" : app.getSetting("receipt_header");
     header = header + receiptHeader;
-    var receiptFooter = app.getBusinessExtra(1);
+    var receiptFooter = !app.getSetting("receipt_footer") ? "" : app.getSetting("receipt_footer");
     recArea.append(header);
     app.ui.table({
         id_to_append: "receipt_area_dummy",
@@ -486,9 +424,7 @@ App.prototype.todaySales = function (username,category) {
                 }
             });
         }
-    });
-    
-     
+    }); 
 };
 
 
@@ -498,9 +434,166 @@ App.prototype.loadSaleSearch = function(){
     $("#product_category_card").css("height", heightCat + "px");
     $("#current_sale_card").css("height", heightSale + "px");
     var html = "<div class='input-group' style='margin-top:20px'>" +
-            "<input type='text' class='form-control' id='search_products' placeholder='Search Products' style='height:50px'>" +
+            "<input type='text' class='form-control' id='item_code' placeholder='Code' style='height:50px;width:10%;font-size:20px'>"+
+            "<input type='text' class='form-control' id='search_products' placeholder='Search Products' style='height:50px;width:90%;font-size:20px'>" +
             "<div class='input-group-addon search' id='search_link'>" +
             "<img src='img/search.png' alt='Search Products' style='width:20px'> </div> </div>";
     $("#product_category_card").html(html);
+    $("#search_link").click(function(){
+        app.allProducts(app.pages.sale);
+    });
+    $("#search_products").bind('keyup', 'return', function () {
+        if($("#search_products").val().trim().length === 0 ){
+            app.commitSale();
+            $("#search_products").focus();
+        }
+    });
+    $("#item_code").bind('keyup', 'return', function () {
+        if ($("#item_code").val().trim().length === 0) {
+            app.commitSale();
+            $("#item_code").focus();
+        }
+        else {
+            app.saleByCode();
+        }
+    });
+    
+    $(document).bind('keyup', 'shift+k', function () {
+         $("#item_code").focus();
+    });
+    
+    $(document).bind('keyup', 'shift+p', function () {
+         $("#search_products").focus();
+    });
+    
+    $(document).bind('keyup', 'shift+c', function () {
+         app.clearSale();
+    });
+    $("#item_code").bind('keyup', 'shift+c', function () {
+         app.clearSale();
+    });
+    $("#search_products").bind('keyup', 'shift+c', function () {
+         app.clearSale();
+    });
     app.setUpAuto(app.context.product.fields.search_products);  
+};
+
+App.prototype.sale = function(options){
+    $("#commit_link").css("visibility", "visible");
+    $("#total_qty").css("visibility", "visible");
+    $("#total_amount").css("visibility", "visible");
+    $("#clear_sale_link").css("visibility", "visible");
+    var values;
+    var userInterface = app.getSetting("user_interface");
+    if(userInterface === "touch"){
+        values =   [options.data[0], 
+                    [1], 
+                    options.data[1], 
+                    options.data[1], 
+                    options.ids];
+    }
+    else if(userInterface === "desktop"){
+        values = [ options.data.PRODUCT_NAME,
+                   [1],
+                   options.data.SP_UNIT_COST, 
+                   options.data.SP_UNIT_COST,
+                   options.ids];
+    }
+
+    var saleArea = $("#sale_summary");
+    var currentId = options.ids[options.index];
+    
+    function appendItem(){
+        saleArea = $("#sale_summary");
+        var prodSpan = "<span id='prod_" + currentId + "'>" + values[0][options.index] + "</span>";
+        var qtySpan = "<span id=qty_" + currentId + " class='qtys'>1</span>";
+        var priceSpan = "<span id=price_" + currentId + ">" + app.formatMoney(values[2][options.index]) + "</span>";
+        var subSpan = "<span id=sub_" + currentId + " class='subs'>" + app.formatMoney(values[2][options.index]) + "</span>";
+        var img = $("<img src='img/cancel.png' style='height:30px;background:red'>");
+        var tr = $("<tr>");
+        img.click(function () {
+            img.parent().parent().remove();
+            app.calculateTotals();
+        });
+        tr.append("<td>" + prodSpan + "</td><td>" + qtySpan + "</td><td>" + priceSpan + "</td><td>" + subSpan + "</td>");
+        var td = $("<td>");
+        td.append(img);
+        tr.append(td);
+        saleArea.append(tr);
+    }
+    
+    if (!saleArea[0]) {
+        app.ui.table({
+            id: "sale_summary",
+            id_to_append: "current_sale_card",
+            headers: ["Name", "Quantity", "Price", "Subtotal", "Remove"],
+            values: [[],[],[],[],[]],
+            include_nums: false,
+            style: "font-size:20px",
+            class: "table-striped",
+            mobile_collapse: true
+        });
+        appendItem();
+    }
+    else {
+        var prod = $("#prod_" + currentId);
+        if (!prod[0]) {
+            appendItem();
+        }
+        else {
+            //increase the quantity
+            var currQty = parseInt($("#qty_" + currentId).html());
+            currQty++;
+            $("#qty_" + currentId).html(currQty);
+            var spUnit = values[2][options.index];
+            var subTotal = parseFloat(spUnit.replace(",", "")) * currQty;
+            $("#sub_" + currentId).html(app.formatMoney(subTotal));
+        }
+    }
+    app.calculateTotals();
+};
+
+
+App.prototype.saleByCode = function(){
+    var code = $("#item_code").val().trim();
+    app.fetchItemById({
+        database: "pos_data",
+        table: "PRODUCT_DATA",
+        column: "*",
+        where: function () {
+            return "PRODUCT_CODE='"+code+"'";
+        },
+        success: function (resp) {
+            var data = resp.response.data;
+            if(data.ID.length === 0){
+                app.briefShow({
+                    title : "Invalid Code",
+                    content : "The specified code does not match any product",
+                    delay : 2000
+                });
+                return;
+            }
+            app.sale({
+                data: data,
+                index: 0,
+                ids: data.ID
+            });
+            $("#item_code").val("");
+            $("#item_code").focus();
+        }
+    });
+};
+
+
+App.prototype.clearSale = function(){
+    $("#category_area").html("");
+    $("#product_display_area").html("");
+    $("#current_sale_card").html("");
+    $("#commit_link").css("visibility", "hidden");
+    $("#total_qty").css("visibility", "hidden");
+    $("#total_amount").css("visibility", "hidden");
+    $("#clear_sale_link").css("visibility", "hidden");
+    $("#total_qty").html("0");
+    $("#total_amount").html("0.00");
+    app.getSetting("user_interface") === "desktop" ? app.loadSaleSearch() : app.loadCategories("category_area", "category");  
 };

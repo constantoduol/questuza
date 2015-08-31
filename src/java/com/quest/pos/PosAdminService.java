@@ -39,6 +39,7 @@ import java.util.logging.Logger;
                 "ID VARCHAR(10) PRIMARY KEY",
                 "BUSINESS_ID VARCHAR(20)",
                 "PRODUCT_NAME TEXT",
+                "PRODUCT_CODE INT",
                 "PRODUCT_QTY FLOAT",
                 "PRODUCT_CATEGORY TEXT",
                 "PRODUCT_SUB_CATEGORY TEXT",
@@ -219,10 +220,8 @@ public class PosAdminService implements Serviceable {
         String defaultInterface = serv.getConfig().getInitParameter("default-user-interface");
         Database db = new Database("user_server");
         boolean exists = db.ifValueExists("user_interface", "CONF_DATA", "CONF_KEY");
-        if(exists) {
-            db.query("UPDATE CONF_DATA SET CONF_VALUE='"+defaultInterface+"' WHERE CONF_KEY='user_interface'");
-        }
-        else {
+        if(!exists) {
+            //change the user interface only if none is specified
             db.doInsert("CONF_DATA", new String[]{"user_interface",defaultInterface});
         }
     }
@@ -461,6 +460,8 @@ public class PosAdminService implements Serviceable {
         worker.setResponseData(Message.SUCCESS);
         serv.messageToClient(worker);
     }
+    
+    
 
     @Endpoint(name = "create_product")
     public synchronized void createProduct(Server serv, ClientWorker worker) {
@@ -485,6 +486,8 @@ public class PosAdminService implements Serviceable {
         String userName = worker.getSession().getAttribute("username").toString();
         //check whether the product exists
         boolean exists = db.ifValueExists(new String[]{busId, productName}, "PRODUCT_DATA", new String[]{"BUSINESS_ID", "PRODUCT_NAME"});
+        Integer count = db.query("select COUNT(*) AS COUNT FROM PRODUCT_DATA").optJSONArray("COUNT").optInt(0);
+        count++;
         if (exists) {
             worker.setResponseData("FAIL");
             worker.setReason("Product " + productName + " already exists");
@@ -494,13 +497,12 @@ public class PosAdminService implements Serviceable {
                 //well create the product
                 String prodId = new UniqueRandom(10).nextMixedRandom();
                 UserAction action = new UserAction(worker, "CREATED PRODUCT " + productName);
-                db.doInsert("PRODUCT_DATA", new String[]{prodId, busId, productName, productQty, productCat,productSubCat,
+                db.doInsert("PRODUCT_DATA", new String[]{prodId, busId, productName,count.toString(), productQty, productCat,productSubCat,
                     pProduct,unitSize,productBp, productSp, productRlimit,
                     productEdate, productNarr, tax, comm, action.getActionID(), "!NOW()"});
                 
                 
                 addStock(prodId, busId, productQty, productBp, productSp, 1, productNarr, "stock_in", bType, db, userName);
-                
                 action.saveAction();
                 worker.setResponseData("SUCCESS");
                 serv.messageToClient(worker);
