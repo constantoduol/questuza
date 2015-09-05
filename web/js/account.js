@@ -150,8 +150,6 @@ App.prototype.navigate = function (privileges, buss) {
         //no privileges found
         //thats strange
     }
-
-
 };
 
 App.prototype.navigateBusiness = function (buss, url) {

@@ -544,13 +544,14 @@ App.prototype.supplierAndProduct = function(actionType,prodId,supId){
 
 App.prototype.supplierAccount = function(prodId,supId,name){
     name = decodeURIComponent(name);
-    app.ui.modal("","Supplier Account",{
+    var m = app.ui.modal("","Supplier Account",{
         okText : "Proceed",
         ok : function(){
             var data = app.getFormData(app.context.supplier_account);
             if(!data) return;
             var request = {
                 entry_type : data.entry_type.value,
+                payment_mode : data.payment_mode.value,
                 amount : data.amount.value,
                 narration : data.narration.value,
                 units_received : data.units_received.value,
@@ -569,6 +570,7 @@ App.prototype.supplierAccount = function(prodId,supId,name){
                     else if(resp === "fail"){
                         app.showMessage(data.response.reason);
                     }
+                    m.modal('hide');
                 }
             });
         }
@@ -1070,6 +1072,7 @@ App.prototype.stockHistory = function () {
     else if(type === "supplier_history"){
       app.reportHistory({
             success : function(data){
+                console.log(data);
                 var r = data.response.data;
                 var totalAmount = 0;
                 var totalUnits = 0;
@@ -1081,13 +1084,13 @@ App.prototype.stockHistory = function () {
                     onload: function () {
                         app.ui.table({
                             id_to_append: "paginate_body",
-                            headers: ["Supplier Name", "Product Name","Product Units", "Amount","Entry Type","Narration","Username","Date"],
-                            values: [r.SUPPLIER_NAME, r.PRODUCT_NAME,r.UNITS, r.TRANS_AMOUNT,r.TRAN_TYPE,r.NARRATION,r.USER_NAME,r.CREATED],
+                            headers: ["Supplier Name", "Product Name","Product Units", "Amount","Entry Type","Payment Mode","Narration","Username","Date"],
+                            values: [r.SUPPLIER_NAME, r.PRODUCT_NAME,r.UNITS, r.TRANS_AMOUNT,r.TRAN_TYPE,r.PAYMENT_MODE,r.NARRATION,r.USER_NAME,r.CREATED],
                             include_nums: true,
                             style: "",
                             mobile_collapse: true,
                             summarize : {
-                                cols : [5],
+                                cols : [6],
                                 lengths : [30]
                             },
                             transform : {
@@ -1102,7 +1105,7 @@ App.prototype.stockHistory = function () {
                                 4 : function(value){
                                     return value === "0" ? "<span style='color:green'>Stock Out</span>" : "<span style='color:red'>Stock In</span>";
                                 },
-                                7 : function(value){
+                                8 : function(value){
                                     return new Date(value).toLocaleString();
                                 }
                             },

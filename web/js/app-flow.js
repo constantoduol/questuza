@@ -438,6 +438,7 @@ AppData.prototype.formData = {
         supplier_account: {
             fields: {
                 entry_type: {required: true, message: "Entry type is required"},
+                payment_mode:  {required: true, message: "Payment mode is required"},
                 amount: {required: true, message: "Amount is required", sign: "+"},
                 units_received: {required: true, message: "Units received is required", sign: "+"},
                 sp_per_unit: {required: true, message: "Selling price per unit is required", sign: "+"},

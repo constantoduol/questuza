@@ -127,6 +127,7 @@ import java.util.logging.Logger;
                 "SUPPLIER_ID VARCHAR(10)",
                 "BUSINESS_ID VARCHAR(20)",
                 "PRODUCT_ID VARCHAR(10)",
+                "PAYMENT_MODE TEXT",
                 "TRANS_AMOUNT FLOAT",
                 "TRAN_TYPE BOOL",
                 "UNITS FLOAT",
@@ -374,6 +375,7 @@ public class PosAdminService implements Serviceable {
         String entryType = request.optString("entry_type");
         String narr = request.optString("narration");
         String bType = request.optString("business_type");
+        String payMode = request.optString("payment_mode");
         String userName = worker.getSession().getAttribute("username").toString();
         JSONObject prodData = db.query("SELECT * FROM PRODUCT_DATA WHERE ID = ? AND BUSINESS_ID = ?", prodId, busId);
         double productTotalqty = prodData.optJSONArray("PRODUCT_QTY").optDouble(0);
@@ -395,9 +397,10 @@ public class PosAdminService implements Serviceable {
                 newQty = productTotalqty - Double.parseDouble(units);
             }
         }
+        
         String tranFlag = entryType.equals("1") ? "stock_in" : "stock_out";
         //stuff from suppliers, credit your account, debit suppliers account
-        db.doInsert("SUPPLIER_ACCOUNT", new String[]{supId, busId, prodId, transAmount, entryType, units, narr, userName, "!NOW()"});
+        db.doInsert("SUPPLIER_ACCOUNT", new String[]{supId, busId, prodId,payMode,transAmount, entryType, units, narr, userName, "!NOW()"});
         db.execute("UPDATE PRODUCT_DATA SET PRODUCT_QTY='" + newQty + "' WHERE ID='" + prodId + "' AND BUSINESS_ID='" + busId + "'");
         //note this as a stock movement
         String transId = new UniqueRandom(50).nextMixedRandom();
@@ -694,7 +697,7 @@ public class PosAdminService implements Serviceable {
         String extraSql1 = supId.equals("all") ? "" : " AND SUPPLIER_ACCOUNT.SUPPLIER_ID = '" + supId + "'";
         String extraSql2 = prodId.equals("all") ? "" : " AND SUPPLIER_ACCOUNT.PRODUCT_ID = '" + prodId + "'";
 
-        String sql = "SELECT SUPPLIER_NAME, PRODUCT_NAME,TRANS_AMOUNT,TRAN_TYPE,UNITS,NARRATION,SUPPLIER_ACCOUNT.USER_NAME,"
+        String sql = "SELECT SUPPLIER_NAME, PRODUCT_NAME,PAYMENT_MODE,TRANS_AMOUNT,TRAN_TYPE,UNITS,NARRATION,SUPPLIER_ACCOUNT.USER_NAME,"
                 + " SUPPLIER_ACCOUNT.CREATED FROM SUPPLIER_DATA, PRODUCT_DATA, SUPPLIER_ACCOUNT WHERE "
                 + " SUPPLIER_ACCOUNT.CREATED >= ? AND SUPPLIER_ACCOUNT.CREATED <= ? AND SUPPLIER_ACCOUNT.PRODUCT_ID = PRODUCT_DATA.ID"
                 + " AND SUPPLIER_ACCOUNT.SUPPLIER_ID = SUPPLIER_DATA.ID AND SUPPLIER_ACCOUNT.BUSINESS_ID = ? ";

@@ -171,6 +171,8 @@ App.prototype.commitSale = function () {
         var prodId = qtyElemId.substring(4,qtyElemId.length);
         var qty = qtyElem.html().trim() === "" ? 0 : parseInt(qtyElem.html());
         var availStock = parseFloat($("#stock_" + prodId).html());
+        console.log("available : "+availStock);
+        console.log("qty : "+qty);
         var trackStock = !app.getSetting("track_stock") ? "1" : app.getSetting("track_stock"); 
         if (qty <= 0) {
             app.showMessage(app.context.invalid_qty);
@@ -434,10 +436,10 @@ App.prototype.loadSaleSearch = function(){
     $("#product_category_card").css("height", heightCat + "px");
     $("#current_sale_card").css("height", heightSale + "px");
     var html = "<div class='input-group' style='margin-top:20px'>" +
-            "<input type='text' class='form-control' id='item_code' placeholder='Code' style='height:50px;width:10%;font-size:20px'>"+
-            "<input type='text' class='form-control' id='search_products' placeholder='Search Products' style='height:50px;width:90%;font-size:20px'>" +
+            "<input type='text' class='form-control' id='item_code' placeholder='Code' style='height:70px;width:10%;font-size:30px'>"+
+            "<input type='text' class='form-control' id='search_products' placeholder='Search Products' style='height:70px;width:90%;font-size:30px'>" +
             "<div class='input-group-addon search' id='search_link'>" +
-            "<img src='img/search.png' alt='Search Products' style='width:20px'> </div> </div>";
+            "<img src='img/search.png' alt='Search Products' style='width:40px'> </div> </div>";
     $("#product_category_card").html(html);
     $("#search_link").click(function(){
         app.allProducts(app.pages.sale);
@@ -569,7 +571,7 @@ App.prototype.saleByCode = function(){
                 app.briefShow({
                     title : "Invalid Code",
                     content : "The specified code does not match any product",
-                    delay : 2000
+                    delay : 1000
                 });
                 return;
             }
