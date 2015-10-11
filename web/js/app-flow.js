@@ -93,14 +93,9 @@ AppData.prototype.formData = {
                         after: function (data, index) {
                             $("#category_area").html("");
                             $("#product_display_area").html("");
-                            app.sale({
-                                data : data,
-                                index : index,
-                                ids : data.ID
-                            });
-                            app.runLater(100,function(){
-                                $("#search_products").val("");
-                                $("#search_products").focus(); 
+                            app.quantityPicker({
+                                data: data,
+                                index: index
                             });
                             
 
@@ -290,7 +285,7 @@ AppData.prototype.formData = {
                     autocomplete_handler: {
                         fields: {
                             product_name: "PRODUCT_NAME",
-                            product_quantity: "PRODUCT_QTY",
+                            current_product_quantity : "PRODUCT_QTY",
                             product_category: "PRODUCT_CATEGORY",
                             product_sub_category: "PRODUCT_SUB_CATEGORY",
                             product_bp_unit_cost: "BP_UNIT_COST",

@@ -628,7 +628,7 @@ App.prototype.gridEdit = function(ids,columns,headers,values){
         col_names : headers,
         load_column_by_column : true, 
         init_data : values,
-        disabled : [0,7,8],
+        disabled : [0,1,8,9],
         col_types: function () {
             var types = [];
             $.each(headers, function (index) {
@@ -696,7 +696,7 @@ App.prototype.allProducts = function (handler) {
                         headers = ["Code","Product Name", "Category","S/Category", "BP/Unit", "SP/Unit", "Available Qty", "Reminder Limit", "Date Created", "Expiry Date"];
                         values = [resp.PRODUCT_CODE,resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.BP_UNIT_COST, resp.SP_UNIT_COST, resp.PRODUCT_QTY,
                             resp.PRODUCT_REMIND_LIMIT, resp.CREATED, resp.PRODUCT_EXPIRY_DATE];
-                        columns = ["PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "BP_UNIT_COST", "SP_UNIT_COST","PRODUCT_QTY",
+                        columns = ["PRODUCT_CODE","PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "BP_UNIT_COST", "SP_UNIT_COST","PRODUCT_QTY",
                             "PRODUCT_REMIND_LIMIT", "CREATED","PRODUCT_EXPIRY_DATE"];
                         
                     }
@@ -1238,10 +1238,14 @@ App.prototype.createProduct = function () {
     else {
         $("#product_parent").removeAttr("current-item");
     }
-  
+    var currentQty = parseFloat($("#current_product_quantity").val());
+    var changeQty = parseFloat(data.product_quantity.value);
+    var qtyType = $("#product_quantity_type").val();
+    var newQty = qtyType === "increase" ? currentQty + changeQty : currentQty - changeQty;
+    newQty = newQty < 0 ? 0 : newQty;
     var requestData = {
         product_name: data.product_name.value,
-        product_quantity: data.product_quantity.value,
+        product_quantity: newQty,
         product_category: data.product_category.value,
         product_sub_category: data.product_sub_category.value,
         product_bp_unit_cost: data.product_bp_unit_cost.value,
@@ -1338,12 +1342,16 @@ App.prototype.updateProduct = function () {
     else {
         $("#product_parent").removeAttr("current-item");
     }
-    
+    var currentQty = parseFloat($("#current_product_quantity").val());
+    var changeQty = parseFloat(data.product_quantity.value);
+    var qtyType = $("#product_quantity_type").val();
+    var newQty = qtyType === "increase" ? currentQty + changeQty : currentQty - changeQty;
+    newQty = newQty < 0 ? 0 : newQty;
     var requestData = {
             id: id,
             old_product_name: $("#product_name").attr("old-product-name"),
             product_name: data.product_name.value,
-            product_quantity: data.product_quantity.value,
+            product_quantity: newQty,
             product_category: data.product_category.value,
             product_sub_category: data.product_sub_category.value,
             product_bp_unit_cost: data.product_bp_unit_cost.value,

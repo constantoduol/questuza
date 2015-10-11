@@ -599,3 +599,48 @@ App.prototype.clearSale = function(){
     $("#total_amount").html("0.00");
     app.getSetting("user_interface") === "desktop" ? app.loadSaleSearch() : app.loadCategories("category_area", "category");  
 };
+
+
+App.prototype.quantityPicker = function (options) {
+    var html = "<div class = 'input-group' >" +
+            "<input type = 'number' class = 'form-control' id = 'select_quantity' placeholder = 'Quantity' style='height : 60px;font-size:20px' value=1 >" +
+            "<div class = 'input-group-addon' style='padding:0px'>" +
+            "<div class='toggle-button' style='background-color:green' id='increase_qty'> + </div>" +
+            "<div class='toggle-button' style='background-color:red' id='decrease_qty'> - </div>" +
+            "</div>" +
+            "</div>";
+    var m = app.ui.modal(html, "Quantity", {
+        okText: "Done",
+        ok: function () {
+            var qty = parseInt($("#select_quantity").val());
+            qty = qty <= 0 || !qty ? 1 : qty;
+            for (var x = 0; x < qty; x++) {
+                app.sale({
+                    data: options.data,
+                    index: options.index,
+                    ids: options.data.ID
+                });
+            }
+            app.runLater(100, function () {
+                $("#search_products").val("");
+                $("#search_products").focus();
+            });
+            m.modal('hide');
+        }
+    });
+
+    app.runLater(200, function () {
+        $("#modal_area_button_ok").focus();
+    });
+
+    $("#increase_qty").click(function () {
+        var qty = parseInt($("#select_quantity").val());
+        qty++;
+        $("#select_quantity").val(qty);
+    });
+    $("#decrease_qty").click(function () {
+        var qty = parseInt($("#select_quantity").val());
+        qty = qty <= 0 ? 1 : qty - 1;
+        $("#select_quantity").val(qty);
+    });
+};

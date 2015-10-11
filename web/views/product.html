@@ -14,9 +14,15 @@
         <label for="product_name">Product Name</label>
         <input type="text" class="form-control" id="product_name" placeholder="Product Name">
 
-        <label for="product_quantity">Quantity</label>
-        <input type="number" class="form-control" id="product_quantity" placeholder="Quantity">
-        
+        <label for="product_quantity_div">Quantity</label>
+        <div id="product_quantity_div" style="display:flex">
+            <input type='text' id="current_product_quantity" class="info_badge" style="width: 10%" value='0.0' disabled/>
+            <select id="product_quantity_type" style="width:20%;margin-right: 10px">
+                <option value="increase">Increase By</option>
+                <option value="decrease">Decrease By</option>
+            </select>
+            <input type="number"  id="product_quantity" placeholder="Quantity added/removed" value="0" style="width:70%" class="form-control">
+        </div>
          <label for="product_category">Product Category</label>
         <input type="text" class="form-control" id="product_category" placeholder="Product Category">
         
