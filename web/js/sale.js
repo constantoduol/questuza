@@ -116,7 +116,8 @@ App.prototype.loadProducts = function(category,sub_category){
                    app.sale({
                         data: values,
                         index: --x,
-                        ids: IDS
+                        ids: IDS,
+                        prod_data : a
                     });
                 },
                 transform : {
@@ -165,14 +166,15 @@ App.prototype.commitSale = function () {
     var qtysElems = $(".qtys");
     var prodIds = [];
     var qtys = [];
+    var discountedPrices = []; //this is here for the sake of discounts
     for (var x = 0; x < qtysElems.length; x++) {
         var qtyElem = $(qtysElems[x]);
         var qtyElemId = qtyElem.attr("id");
         var prodId = qtyElemId.substring(4,qtyElemId.length);
         var qty = qtyElem.html().trim() === "" ? 0 : parseInt(qtyElem.html());
         var availStock = parseFloat($("#stock_" + prodId).html());
-        console.log("available : "+availStock);
-        console.log("qty : "+qty);
+        var dPrice = parseFloat($("#price_"+prodId).html().replace(",",""));
+        discountedPrices.push(dPrice);
         var trackStock = !app.getSetting("track_stock") ? "1" : app.getSetting("track_stock"); 
         if (qty <= 0) {
             app.showMessage(app.context.invalid_qty);
@@ -197,7 +199,7 @@ App.prototype.commitSale = function () {
         app.showMessage(app.context.no_product_selected);
         return;
     }
-
+   
     var m = app.ui.modal(app.context.commit_sale, "Commit Sale", {
         ok: function () {
             var request = {
@@ -205,7 +207,8 @@ App.prototype.commitSale = function () {
                 product_qtys: qtys,
                 tran_type: "0",
                 tran_flag: "sale_to_customer",
-                business_type: app.appData.formData.login.current_user.business_type
+                business_type: app.appData.formData.login.current_user.business_type,
+                discount_prices : discountedPrices //this is useful for a business having discounts
             };
             //do some stuff like saving to the server
             app.xhr(request, app.dominant_privilege, "transact", {
@@ -486,8 +489,10 @@ App.prototype.sale = function(options){
     $("#total_amount").css("visibility", "visible");
     $("#clear_sale_link").css("visibility", "visible");
     var values;
+    var productCache;
     var userInterface = app.getSetting("user_interface");
     if(userInterface === "touch"){
+        productCache = options.prod_data;
         values =   [options.data[0], 
                     [1], 
                     options.data[1], 
@@ -495,32 +500,82 @@ App.prototype.sale = function(options){
                     options.ids];
     }
     else if(userInterface === "desktop"){
+        productCache = options.data;
         values = [ options.data.PRODUCT_NAME,
                    [1],
                    options.data.SP_UNIT_COST, 
                    options.data.SP_UNIT_COST,
                    options.ids];
     }
-
+    console.log(productCache)
     var saleArea = $("#sale_summary");
     var currentId = options.ids[options.index];
     
     function appendItem(){
         saleArea = $("#sale_summary");
-        var prodSpan = "<span id='prod_" + currentId + "'>" + values[0][options.index] + "</span>";
-        var qtySpan = "<span id=qty_" + currentId + " class='qtys'>1</span>";
-        var priceSpan = "<span id=price_" + currentId + ">" + app.formatMoney(values[2][options.index]) + "</span>";
-        var subSpan = "<span id=sub_" + currentId + " class='subs'>" + app.formatMoney(values[2][options.index]) + "</span>";
-        var img = $("<img src='img/cancel.png' style='height:30px;background:red'>");
+        var prodSpan = "<span id='prod_" + currentId + "'>" + values[0][options.index] + "</span>";//product name
+        var qtySpan = "<span id=qty_" + currentId + " class='qtys'>1</span>";//quantity
+        var priceSpan = "<span id=price_" + currentId + ">" + app.formatMoney(values[2][options.index]) + "</span>";//price
+        var subSpan = "<span id=sub_" + currentId + " class='subs'>" + app.formatMoney(values[2][options.index]) + "</span>";//subtotal
+        var img = $("<img src='img/cancel.png' style='height:30px;background:red'>"); //remove icon
+        var edit = $("<img src='img/edit.png' style='height:30px;background:lightblue' prod_id="+currentId+">"); //edit icon
         var tr = $("<tr>");
         img.click(function () {
             img.parent().parent().remove();
             app.calculateTotals();
         });
+        edit.click(function(){
+            var prodId = $(this).attr("prod_id");
+            var currQty = parseInt($("#qty_"+prodId).html());
+            var currPrice = parseFloat($("#price_"+prodId).html().replace(",",""))*currQty;
+            //invoke the price editing function for discounts
+            //display the maximum discount
+            var maxDiscount = productCache.MAX_DISCOUNT[productCache.ID.indexOf(prodId)]*currQty || 0;
+            var html ="<input type='number' style='font-size:20px;height:50px' id='discounted_price' value='"+currPrice+"' class='form-control' \n\
+                placeholder='Discounted price'><br><span style='font-size:16px'>Maximum Discount : "+app.formatMoney(maxDiscount)+"</span>\n\
+                <br><br><span id='discount_info' style='font-size:16px;color:red'></span>";
+            var m = app.ui.modal(html,"Discount",{
+                okText : "Accept",
+                cancelText : "Cancel",
+                ok : function(){
+                    //change the prices appropriately, the price and subtotal and force a price
+                    //recalculate
+                    var newPrice = parseFloat($("#discounted_price").val());
+                    var currSubTotal = parseFloat($("#sub_"+prodId).html().replace(",",""));
+                    var newSubtotal = currSubTotal - currPrice + newPrice;
+                    $("#price_"+prodId).html(app.formatMoney(newPrice/currQty));
+                    $("#sub_"+prodId).html(app.formatMoney(newSubtotal));
+                    app.calculateTotals();
+                    m.modal('hide');
+                }
+            });
+            $("#discounted_price").keyup(function(){
+                //incase the person changes the price tell them about the maximum discount
+                var newPrice = parseFloat($("#discounted_price").val().replace(",","")) || 0;
+                if(newPrice < (currPrice - maxDiscount)){
+                    //you have gone below the allowed discount
+                    $("#discount_info").html("You have exceeded the allowed discount!");
+                    $("#modal_area_button_ok").css("visibility","hidden");
+                }
+                else if(newPrice > currPrice){
+                    $("#discount_info").html("The price set is higher than the allowed price!");
+                    $("#modal_area_button_ok").css("visibility","hidden");
+                }
+                else {
+                    $("#discount_info").html("Discount offered : "+app.formatMoney((currPrice - newPrice)));
+                    $("#modal_area_button_ok").css("visibility","visible");
+                }
+            });
+        });
+
         tr.append("<td>" + prodSpan + "</td><td>" + qtySpan + "</td><td>" + priceSpan + "</td><td>" + subSpan + "</td>");
         var td = $("<td>");
         td.append(img);
+        
+        var td1 = $("<td>");
+        td1.append(edit);
         tr.append(td);
+        app.getSetting("allow_discounts") === "1" ? tr.append(td1) : null;//append the edit function only if discounts are allowed
         saleArea.append(tr);
     }
     
@@ -528,8 +583,8 @@ App.prototype.sale = function(options){
         app.ui.table({
             id: "sale_summary",
             id_to_append: "current_sale_card",
-            headers: ["Name", "Quantity", "Price", "Subtotal", "Remove"],
-            values: [[],[],[],[],[]],
+            headers: ["Name", "Quantity", "Price", "Subtotal", "Remove","Edit"],
+            values: [[],[],[],[],[],[]],
             include_nums: false,
             style: "font-size:20px",
             class: "table-striped",

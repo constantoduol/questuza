@@ -41,6 +41,15 @@ App.prototype.settings = {
         selected : "1",
         label : "Add purchases from suppliers to profit and loss"
     },
+    allow_discounts: {
+        type: "select",
+        id : "allow_discounts",
+        option_names: ["Yes", "No"],
+        option_values: ["1", "0"],
+        required : true,
+        selected : "1",
+        label : "Allow discounts?"
+    },
     track_stock:{
         type: "select",
         id : "track_stock",

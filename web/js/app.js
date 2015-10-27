@@ -415,7 +415,8 @@ App.prototype.renderDom = function(obj,toAppend){
             elem.bind(event,obj.events[event]);
         });
     }
-    toAppend.append(elem);
+    var hr = $("<hr>");
+    toAppend.append(elem).append(hr);
 };
 
 App.prototype.briefShow = function(options){

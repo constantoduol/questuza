@@ -191,6 +191,7 @@ AppData.prototype.formData = {
                             product_sp_unit_cost: "SP_UNIT_COST",
                             product_narration: "PRODUCT_NARRATION",
                             product_parent: "PRODUCT_PARENT",
+                            max_discount : "MAX_DISCOUNT",
                             tax: "TAX",
                             commission: "COMMISSION"
                         }
@@ -255,6 +256,7 @@ AppData.prototype.formData = {
                     }
                 },
                 product_sp_unit_cost: {required: true, message: "Product selling price per unit is required", sign: "+"},
+                max_discount :{required:false,sign : "+"},
                 product_narration: {required: false},
                 tax: {required: false, sign: "+"},
                 commission: {required: false, sign: "+"}
@@ -293,6 +295,7 @@ AppData.prototype.formData = {
                             product_reminder_limit: "PRODUCT_REMIND_LIMIT",
                             product_expiry_date: "PRODUCT_EXPIRY_DATE",
                             product_narration: "PRODUCT_NARRATION",
+                            max_discount : "MAX_DISCOUNT",
                             tax: "TAX",
                             commission: "COMMISSION"
                         },
@@ -375,6 +378,7 @@ AppData.prototype.formData = {
                 },
                 product_bp_unit_cost: {required: true, message: "Product buying price per unit is required", sign: "+"},
                 product_sp_unit_cost: {required: true, message: "Product selling price per unit is required", sign: "+"},
+                max_discount :{required:false,sign : "+"},
                 product_reminder_limit: {required: true, message: "Product reminder limit is required", sign: "+"},
                 product_expiry_date: {required: true, message: "Product expiry date required"},
                 product_narration: {required: false},

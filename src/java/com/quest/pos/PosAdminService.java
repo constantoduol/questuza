@@ -1,8 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package com.quest.pos;
 
 import com.quest.access.common.UniqueRandom;
@@ -52,6 +48,7 @@ import java.util.logging.Logger;
                 "PRODUCT_NARRATION TEXT",
                 "TAX FLOAT",
                 "COMMISSION FLOAT",
+                "MAX_DISCOUNT FLOAT",
                 "ACTION_ID TEXT",
                 "CREATED DATETIME"
             }),
@@ -82,20 +79,38 @@ import java.util.logging.Logger;
             }),
     @Model(
             database = "pos_data", table = "TAX_DATA",
-            columns = {"USER_NAME TEXT",
+            columns = {
+                "ID VARCHAR(50)",
+                "USER_NAME TEXT",
                 "BUSINESS_ID VARCHAR(20)",
                 "PRODUCT_ID TEXT",
                 "TAX_VALUE FLOAT",
                 "UNITS_SOLD INT",
+                "TRAN_TYPE BOOL",
                 "CREATED DATETIME"
             }),
     @Model(
             database = "pos_data", table = "COMMISSION_DATA",
-            columns = {"USER_NAME TEXT",
+            columns = {
+                "ID VARCHAR(50)",
+                "USER_NAME TEXT",
                 "BUSINESS_ID VARCHAR(20)",
                 "PRODUCT_ID TEXT",
                 "COMM_VALUE FLOAT",
                 "UNITS_SOLD INT",
+                "TRAN_TYPE BOOL",
+                "CREATED DATETIME"
+            }),
+    @Model(
+            database = "pos_data", table = "DISCOUNT_DATA",
+            columns = {
+                "ID VARCHAR(50)",
+                "USER_NAME TEXT",
+                "BUSINESS_ID VARCHAR(20)",
+                "PRODUCT_ID TEXT",
+                "DISC_VALUE FLOAT",
+                "UNITS_SOLD INT",
+                "TRAN_TYPE BOOL",
                 "CREATED DATETIME"
             }),
     @Model(
@@ -262,6 +277,7 @@ public class PosAdminService implements Serviceable {
         String bType = requestData.optString("business_type");
         String pProduct = requestData.optString("product_parent");
         String unitSize = requestData.optString("product_unit_size");
+        String maxDiscount = requestData.optString("max_discount","0");
         productQty = pProduct.trim().length() > 0 ? "0" : productQty;
         String userName = worker.getSession().getAttribute("username").toString();
         //check that we are not duplicating products
@@ -279,9 +295,9 @@ public class PosAdminService implements Serviceable {
                 Database.executeQuery("UPDATE PRODUCT_DATA SET PRODUCT_NAME=?, "
                         + "PRODUCT_QTY=?, PRODUCT_CATEGORY = ?,PRODUCT_SUB_CATEGORY = ?,PRODUCT_PARENT = ?, PRODUCT_UNIT_SIZE = ?, BP_UNIT_COST=?, "
                         + "SP_UNIT_COST=?, PRODUCT_REMIND_LIMIT=?, "
-                        + "PRODUCT_EXPIRY_DATE=?,PRODUCT_NARRATION=?,TAX = ?, COMMISSION = ? WHERE ID= ? AND BUSINESS_ID = ? ", db,
+                        + "PRODUCT_EXPIRY_DATE=?,PRODUCT_NARRATION=?,TAX = ?, COMMISSION = ?, MAX_DISCOUNT = ? WHERE ID= ? AND BUSINESS_ID = ? ", db,
                         productName, productQty, productCat,productSubCat, pProduct,unitSize,
-                        productBp, productSp, productRlimit, productEdate, productNarr, tax, comm, prodId, busId);
+                        productBp, productSp, productRlimit, productEdate, productNarr, tax, comm,maxDiscount, prodId, busId);
                 if (storedProductQty > newProductQty) {
                     //reduction in stock
                     Double theQty = storedProductQty - newProductQty;
@@ -485,6 +501,7 @@ public class PosAdminService implements Serviceable {
         String bType = requestData.optString("business_type");
         String pProduct = requestData.optString("product_parent");
         String unitSize = requestData.optString("product_unit_size");
+        String maxDiscount = requestData.optString("max_discount","0");
         productQty = pProduct.trim().length() > 0 ? "0" : productQty;
         String userName = worker.getSession().getAttribute("username").toString();
         //check whether the product exists
@@ -502,7 +519,7 @@ public class PosAdminService implements Serviceable {
                 UserAction action = new UserAction(worker, "CREATED PRODUCT " + productName);
                 db.doInsert("PRODUCT_DATA", new String[]{prodId, busId, productName,count.toString(), productQty, productCat,productSubCat,
                     pProduct,unitSize,productBp, productSp, productRlimit,
-                    productEdate, productNarr, tax, comm, action.getActionID(), "!NOW()"});
+                    productEdate, productNarr, tax, comm,maxDiscount, action.getActionID(), "!NOW()"});
                 
                 
                 addStock(prodId, busId, productQty, productBp, productSp, 1, productNarr, "stock_in", bType, db, userName);
@@ -680,6 +697,8 @@ public class PosAdminService implements Serviceable {
             taxHistory(serv, worker);
         } else if (action.equals("supplier_history")) {
             supplierHistory(serv, worker);
+        } else if (action.equals("discount_history")) {
+            discountHistory(serv, worker);
         }
     }
 
@@ -720,12 +739,12 @@ public class PosAdminService implements Serviceable {
         String extraSql = userName.equals("all") ? "" : "AND COMMISSION_DATA.USER_NAME = '" + userName + "'";
         JSONObject data;
         //what we need
-        String allSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,COMM_VALUE,COMMISSION_DATA.CREATED "
+        String allSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,COMM_VALUE,TRAN_TYPE,COMMISSION_DATA.CREATED "
                 + "FROM PRODUCT_DATA,COMMISSION_DATA WHERE PRODUCT_DATA.ID = COMMISSION_DATA.PRODUCT_ID AND "
                 + "COMMISSION_DATA.BUSINESS_ID = ? AND COMMISSION_DATA.CREATED >= ? AND COMMISSION_DATA.CREATED <= ? "
                 + extraSql + " ORDER BY COMMISSION_DATA.CREATED DESC";
 
-        String specificSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,COMM_VALUE,COMMISSION_DATA.CREATED "
+        String specificSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,COMM_VALUE,TRAN_TYPE,COMMISSION_DATA.CREATED "
                 + "FROM PRODUCT_DATA,COMMISSION_DATA WHERE PRODUCT_DATA.ID = COMMISSION_DATA.PRODUCT_ID AND "
                 + "COMMISSION_DATA.BUSINESS_ID = ? AND COMMISSION_DATA.PRODUCT_ID = ? AND COMMISSION_DATA.CREATED >= ? AND COMMISSION_DATA.CREATED <= ? "
                 + extraSql + " ORDER BY COMMISSION_DATA.CREATED DESC";
@@ -750,15 +769,47 @@ public class PosAdminService implements Serviceable {
         String extraSql = userName.equals("all") ? "" : "AND TAX_DATA.USER_NAME = '" + userName + "'";
         JSONObject data;
         //what we need
-        String allSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,TAX_VALUE,TAX_DATA.CREATED "
+        String allSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,TAX_VALUE,TRAN_TYPE,TAX_DATA.CREATED "
                 + "FROM PRODUCT_DATA,TAX_DATA WHERE PRODUCT_DATA.ID = TAX_DATA.PRODUCT_ID AND "
                 + "TAX_DATA.BUSINESS_ID = ? AND TAX_DATA.CREATED >= ? AND TAX_DATA.CREATED <= ? "
                 + extraSql + " ORDER BY TAX_DATA.CREATED DESC";
 
-        String specificSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,COMM_VALUE,TAX_DATA.CREATED "
+        String specificSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,COMM_VALUE,TRAN_TYPE,TAX_DATA.CREATED "
                 + "FROM PRODUCT_DATA,TAX_DATA WHERE PRODUCT_DATA.ID = TAX_DATA.PRODUCT_ID AND "
                 + "TAX_DATA.BUSINESS_ID = ? AND TAX_DATA.PRODUCT_ID = ? AND TAX_DATA.CREATED >= ? AND "
                 + " TAX_DATA.CREATED <= ? " + extraSql + " ORDER BY TAX_DATA.CREATED DESC";
+
+        if (prodId.equals("all")) {
+            data = db.query(allSql, busId, beginDate, endDate);
+        } else {
+            data = db.query(specificSql, busId, prodId, beginDate, endDate);
+        }
+
+        worker.setResponseData(data);
+        serv.messageToClient(worker);
+
+    }
+    
+    private void discountHistory(Server serv, ClientWorker worker) {
+        Database db = new Database(POS_DATA);
+        JSONObject requestData = worker.getRequestData();
+        String beginDate = requestData.optString("begin_date");
+        String endDate = requestData.optString("end_date");
+        String prodId = requestData.optString("id");
+        String userName = requestData.optString("user_name");
+        String busId = requestData.optString("business_id");
+        String extraSql = userName.equals("all") ? "" : "AND DISCOUNT_DATA.USER_NAME = '" + userName + "'";
+        JSONObject data;
+        //what we need
+        String allSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,DISC_VALUE,TRAN_TYPE,DISCOUNT_DATA.CREATED "
+                + "FROM PRODUCT_DATA,DISCOUNT_DATA WHERE PRODUCT_DATA.ID = DISCOUNT_DATA.PRODUCT_ID AND "
+                + "DISCOUNT_DATA.BUSINESS_ID = ? AND DISCOUNT_DATA.CREATED >= ? AND DISCOUNT_DATA.CREATED <= ? "
+                + extraSql + " ORDER BY DISCOUNT_DATA.CREATED DESC";
+
+        String specificSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,DISC_VALUE,TRAN_TYPE,DISCOUNT_DATA.CREATED "
+                + "FROM PRODUCT_DATA,DISCOUNT_DATA WHERE PRODUCT_DATA.ID = DISCOUNT_DATA.PRODUCT_ID AND "
+                + "DISCOUNT_DATA.BUSINESS_ID = ? AND DISCOUNT_DATA.PRODUCT_ID = ? AND DISCOUNT_DATA.CREATED >= ? AND "
+                + " DISCOUNT_DATA.CREATED <= ? " + extraSql + " ORDER BY DISCOUNT_DATA.CREATED DESC";
 
         if (prodId.equals("all")) {
             data = db.query(allSql, busId, beginDate, endDate);

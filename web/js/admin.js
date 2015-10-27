@@ -628,11 +628,11 @@ App.prototype.gridEdit = function(ids,columns,headers,values){
         col_names : headers,
         load_column_by_column : true, 
         init_data : values,
-        disabled : [0,1,8,9],
+        disabled : [0,1,11,12],
         col_types: function () {
             var types = [];
             $.each(headers, function (index) {
-                var width = 100;
+                var width = 80;
                 width = headers[index] === "Product Name" ? 200 : width;
                 types.push({
                     type: 'text',
@@ -674,8 +674,8 @@ App.prototype.allProducts = function (handler) {
     app.xhr(request, app.dominant_privilege, "all_products", {
         load: true,
         success: function (data) {
-            var resp = data.response.data;
-            app.context.product.fields.search_products.autocomplete.data = $.extend(true, {}, resp); //we will need this for paginateSelect
+            var r = data.response.data;
+            app.context.product.fields.search_products.autocomplete.data = $.extend(true, {}, r); //we will need this for paginateSelect
             var title = "All Products";
             app.paginate({
                 save_state: true,
@@ -685,34 +685,35 @@ App.prototype.allProducts = function (handler) {
                 onload: function () {
                     var bType = app.appData.formData.login.current_user.business_type;
                     var headers, values,columns;
-                    $.each(resp.PRODUCT_NAME, function (index) {
-                        resp.CREATED[index] = new Date(resp.CREATED[index]).toLocaleDateString();
-                        resp.PRODUCT_EXPIRY_DATE[index] = new Date(resp.PRODUCT_EXPIRY_DATE[index]).toLocaleDateString();
-                        resp.BP_UNIT_COST[index] = app.formatMoney(resp.BP_UNIT_COST[index]);
-                        resp.SP_UNIT_COST[index] = app.formatMoney(resp.SP_UNIT_COST[index]);
+                    $.each(r.PRODUCT_NAME, function (index) {
+                        r.CREATED[index] = new Date(r.CREATED[index]).toLocaleDateString();
+                        r.PRODUCT_EXPIRY_DATE[index] = new Date(r.PRODUCT_EXPIRY_DATE[index]).toLocaleDateString();
+                        r.BP_UNIT_COST[index] = app.formatMoney(r.BP_UNIT_COST[index]);
+                        r.SP_UNIT_COST[index] = app.formatMoney(r.SP_UNIT_COST[index]);
                     });
                     
                     if (bType === "goods") {
-                        headers = ["Code","Product Name", "Category","S/Category", "BP/Unit", "SP/Unit", "Available Qty", "Reminder Limit", "Date Created", "Expiry Date"];
-                        values = [resp.PRODUCT_CODE,resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.BP_UNIT_COST, resp.SP_UNIT_COST, resp.PRODUCT_QTY,
-                            resp.PRODUCT_REMIND_LIMIT, resp.CREATED, resp.PRODUCT_EXPIRY_DATE];
+                        headers = ["Code","Product Name", "Category","S/Category", "BP/Unit", "SP/Unit", "Qty", "Reminder Limit","% Tax","Commission","Discount", "Date Created", "Expiry Date"];
+                        values = [r.PRODUCT_CODE,r.PRODUCT_NAME, r.PRODUCT_CATEGORY,r.PRODUCT_SUB_CATEGORY, r.BP_UNIT_COST, r.SP_UNIT_COST, r.PRODUCT_QTY,
+                            r.PRODUCT_REMIND_LIMIT,r.TAX,r.COMMISSION,r.MAX_DISCOUNT, r.CREATED, r.PRODUCT_EXPIRY_DATE];
                         columns = ["PRODUCT_CODE","PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "BP_UNIT_COST", "SP_UNIT_COST","PRODUCT_QTY",
-                            "PRODUCT_REMIND_LIMIT", "CREATED","PRODUCT_EXPIRY_DATE"];
+                            "PRODUCT_REMIND_LIMIT","TAX","COMMISSION","MAX_DISCOUNT", "CREATED","PRODUCT_EXPIRY_DATE"];
                         
                     }
                     else if (bType === "services") {
                         if (app.getSetting("track_stock") === "1") {
-                            headers = ["Code","Product Name", "Category","S/Category", "SP/Unit","Available Qty", "Date Created"];
-                            values = [resp.PRODUCT_CODE,resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.SP_UNIT_COST, 
-                                resp.PRODUCT_QTY, resp.CREATED];
+                            headers = ["Code","Product Name", "Category","S/Category", "SP/Unit","Available Qty","Tax","Commission","Discount", "Date Created"];
+                            values = [r.PRODUCT_CODE,r.PRODUCT_NAME, r.PRODUCT_CATEGORY,r.PRODUCT_SUB_CATEGORY, r.SP_UNIT_COST, 
+                                r.PRODUCT_QTY,r.TAX,r.COMMISSION,r.MAX_DISCOUNT, r.CREATED];
                             columns = ["PRODUCT_CODE","PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "SP_UNIT_COST", 
-                                "PRODUCT_QTY","CREATED"];
+                                "PRODUCT_QTY","TAX","COMMISSION","MAX_DISCOUNT","CREATED"];
                             
                         }
                         else {
-                            headers = ["Code","Product Name", "Category","S/Category" ,"SP/Unit", "Date Created"];
-                            values = [resp.PRODUCT_CODE,resp.PRODUCT_NAME, resp.PRODUCT_CATEGORY,resp.PRODUCT_SUB_CATEGORY, resp.SP_UNIT_COST, resp.CREATED];
-                            columns = ["PRODUCT_CODE","PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY", "SP_UNIT_COST", "CREATED"];
+                            headers = ["Code","Product Name", "Category","S/Category" ,"SP/Unit","Tax","Commission","Discount", "Date Created"];
+                            values = [r.PRODUCT_CODE,r.PRODUCT_NAME, r.PRODUCT_CATEGORY,r.PRODUCT_SUB_CATEGORY, 
+                                r.SP_UNIT_COST,r.TAX,r.COMMISSION,r.MAX_DISCOUNT, r.CREATED];
+                            columns = ["PRODUCT_CODE","PRODUCT_NAME", "PRODUCT_CATEGORY","PRODUCT_SUB_CATEGORY","SP_UNIT_COST","TAX","COMMISSION","MAX_DISCOUNT","CREATED"];
                         }
                     }
                      app.ui.table({
@@ -728,7 +729,7 @@ App.prototype.allProducts = function (handler) {
                             }
                         }
                     });
-                    $.each(resp.PRODUCT_NAME, function (index) {
+                    $.each(r.PRODUCT_NAME, function (index) {
                         //set up onclick handlers
                         $("#item_select_" + index).click(function () {
                             var defaultHandler = handler === app.pages.sale ? undefined : app.context.product.fields.search_products.autocomplete_handler;
@@ -751,7 +752,7 @@ App.prototype.allProducts = function (handler) {
                         var img = $("<img src='img/edit.png' title='Edit' class='paginate_round_icon' id='paginate_edit_icon'>");
                         img.click(function () {
                             //launch the edit grid 
-                            app.gridEdit(resp.ID,columns,headers,values);
+                            app.gridEdit(r.ID,columns,headers,values);
                         });
                         $("#paginate_button_area").append(img);
                     }
@@ -821,11 +822,11 @@ App.prototype.goodsStockHistory = function () {
                        
                         var span = type === "0" ? "Stock Decrease" : "Stock Increase";
                         resp.TRAN_TYPE[index] = "<span style='color : " + color + "'>" + span + "<span>";
+                        var transId = resp.ID[index];
+                        var undo = "<a href='#' onclick='app.undoSale(\"" + resp.PRODUCT_ID[index] + "\",\"" + resp.PRODUCT_ID[index] + "\"\n\
+                                    ,\"" + transId + "\")' title='Undo sale'>Undo Sale</a>";
 
-                        var undo = "<a href='#' onclick='app.undoSale(\"" + resp.PRODUCT_ID[index] + "\",\"" + resp.STOCK_QTY[index] + "\")' \n\
-                                    title='Undo sale'>Undo Sale</a>";
-
-                        flag === "sale_to_customer" ? undos.push(undo) : undos.push("");
+                        flag === "sale_to_customer"  ? undos.push(undo) : undos.push("");
 
                         var time = new Date(resp.CREATED[index]).toLocaleString();
                         resp.CREATED[index] = time;
@@ -838,7 +839,7 @@ App.prototype.goodsStockHistory = function () {
                         totalQty = totalQty + qty;
                         totalSP = totalSP + amountSP;
                         totalBP = totalBP + amountBP;
-                        profits = profits + profit;
+                        flag = "reversal_of_sale" ? profits = profits - profit : profits = profits + profit;;
                         flag === "sale_to_customer" ? costOfSales = costOfSales - amountSP : 0;
                         flag === "sale_to_customer" ? costOfGoods = costOfGoods - amountBP : 0;
                     });
@@ -927,11 +928,12 @@ App.prototype.servicesStockHistory = function () {
                        
                         var span = type === "0" ? "Stock Decrease" : "Stock Increase";
                         resp.TRAN_TYPE[index] = "<span style='color : " + color + "'>" + span + "<span>";
+                        
+                        var transId = resp.ID[index];
+                        var undo = "<a href='#' onclick='app.undoSale(\"" + resp.PRODUCT_ID[index] + "\",\"" + resp.PRODUCT_ID[index] + "\"\n\
+                                    ,\"" + transId + "\")' title='Undo sale'>Undo Sale</a>";
 
-                        var undo = "<a href='#' onclick='app.undoSale(\"" + resp.PRODUCT_ID[index] + "\",\"" + resp.STOCK_QTY[index] + "\")' \n\
-                                    title='Undo sale'>Undo Sale</a>";
-
-                        type === "0" ? undos.push(undo) : undos.push("");
+                        flag === "sale_to_customer" ? undos.push(undo) : undos.push("");
 
                         var time = new Date(resp.CREATED[index]).toLocaleString();
                         resp.CREATED[index] = time;
@@ -991,8 +993,9 @@ App.prototype.stockHistory = function () {
                     onload: function () {
                         var totalComm = 0, units = 0;
                         $.each(resp.COMM_VALUE,function(x){
-                            totalComm = parseFloat(resp.COMM_VALUE[x]) + totalComm;
-                            units = parseFloat(resp.UNITS_SOLD[x]) + units;
+                            var type = resp.TRAN_TYPE[x];
+                            totalComm =  type === "0" ?  parseFloat(resp.COMM_VALUE[x]) + totalComm : parseFloat(resp.COMM_VALUE[x]) - totalComm ;
+                            units = type === "0" ? parseFloat(resp.UNITS_SOLD[x]) + units : parseFloat(resp.UNITS_SOLD[x]) - units ;
                         });
                         resp.PRODUCT_NAME.push("<b>Totals</b>");
                         resp.UNITS_SOLD.push("<b>"+units+"</b>");
@@ -1001,18 +1004,31 @@ App.prototype.stockHistory = function () {
                         resp.CREATED.push("");
                         app.ui.table({
                             id_to_append : "paginate_body",
-                            headers : ["Product Name","Units Sold", "Commission","User Name", "Date Entered"],
-                            values : [resp.PRODUCT_NAME,resp.UNITS_SOLD,resp.COMM_VALUE,resp.USER_NAME, resp.CREATED],
+                            headers : ["Product Name","Type","Units Sold", "Commission","User Name", "Date Entered"],
+                            values : [resp.PRODUCT_NAME,resp.TRAN_TYPE,resp.UNITS_SOLD,resp.COMM_VALUE,resp.USER_NAME, resp.CREATED],
                             include_nums : true,
                             style : "",
                             mobile_collapse : true,
                             transform : {
-                                2 : function(value,index){ //transform col 2 values to money
+                                1 : function(value){
+                                    var narr = "", color = "";
+                                    if (value === "0") {
+                                        narr = "Sale";
+                                        color = "green";
+                                    }
+                                    else if (value === "1") {
+                                        narr = "Reversal of sale";
+                                        color = "red";
+                                    }
+                                    var resp = "<span style='color:" + color + "'>" + narr + "</span>";
+                                    return resp;
+                                },
+                                3 : function(value,index){ //transform col 2 values to money
                                     if(index === (resp.PRODUCT_NAME.length - 1))
                                         return "<b>"+app.formatMoney(value)+"</b>";
                                     return app.formatMoney(value);
                                 },
-                                4 : function(value,index){
+                                5 : function(value,index){
                                     if(index === (resp.PRODUCT_NAME.length - 1))
                                         return "";
                                     return new Date(value).toLocaleString();
@@ -1020,6 +1036,66 @@ App.prototype.stockHistory = function () {
                             }
                         });
                      }
+                });
+            }
+        });
+    }
+    else if (type === "discount_history") {
+        app.reportHistory({
+            success: function (data) {
+                var resp = data.response.data;
+                console.log(resp);
+                app.paginate({
+                    title: "Discounts",
+                    save_state: true,
+                    save_state_area: "content_area",
+                    onload_handler: app.pages.stock_history,
+                    onload: function () {
+                        var totalDisc = 0, units = 0;
+                        $.each(resp.DISC_VALUE, function (x) {
+                            var type = resp.TRAN_TYPE[x];
+                            totalDisc = type === "0" ? parseFloat(resp.DISC_VALUE[x]) + totalDisc : parseFloat(resp.DISC_VALUE[x]) - totalDisc;
+                            units = type === "0" ? parseFloat(resp.UNITS_SOLD[x]) + units : parseFloat(resp.UNITS_SOLD[x]) - units;
+                        });
+                        resp.PRODUCT_NAME.push("<b>Totals</b>");
+                        resp.UNITS_SOLD.push("<b>" + units + "</b>");
+                        resp.DISC_VALUE.push(totalDisc);
+                        resp.USER_NAME.push("");
+                        resp.CREATED.push("");
+                        app.ui.table({
+                            id_to_append: "paginate_body",
+                            headers: ["Product Name", "Type", "Units Sold", "Discount", "User Name", "Date Entered"],
+                            values: [resp.PRODUCT_NAME,resp.TRAN_TYPE, resp.UNITS_SOLD, resp.DISC_VALUE, resp.USER_NAME, resp.CREATED],
+                            include_nums: true,
+                            style: "",
+                            mobile_collapse: true,
+                            transform: {
+                                1: function (value) {
+                                    var narr = "", color = "";
+                                    if(value === "0"){
+                                        narr = "Sale";
+                                        color = "green";
+                                    }
+                                    else if(value === "1"){
+                                        narr = "Reversal of sale";
+                                        color = "red";
+                                    }
+                                    var resp = "<span style='color:" + color + "'>" + narr + "</span>";
+                                    return resp;
+                                },
+                                3: function (value, index) { //transform col 2 values to money
+                                    if (index === (resp.PRODUCT_NAME.length - 1))
+                                        return "<b>" + app.formatMoney(value) + "</b>";
+                                    return app.formatMoney(value);
+                                },
+                                5: function (value, index) {
+                                    if (index === (resp.PRODUCT_NAME.length - 1))
+                                        return "";
+                                    return new Date(value).toLocaleString();
+                                }
+                            }
+                        });
+                    }
                 });
             }
         });
@@ -1036,8 +1112,9 @@ App.prototype.stockHistory = function () {
                     onload: function () {
                         var totalTax = 0, units = 0;
                         $.each(resp.TAX_VALUE,function(x){
-                            totalTax = parseFloat(resp.TAX_VALUE[x]) + totalTax;
-                            units = parseFloat(resp.UNITS_SOLD[x]) + units;
+                            var type = resp.TRAN_TYPE[x];
+                            totalTax = type === "0" ? parseFloat(resp.COMM_VALUE[x]) + totalTax : parseFloat(resp.COMM_VALUE[x]) - totalTax;
+                            units = type === "0" ? parseFloat(resp.UNITS_SOLD[x]) + units : parseFloat(resp.UNITS_SOLD[x]) - units;
                         });
                         resp.PRODUCT_NAME.push("<b>Totals</b>");
                         resp.UNITS_SOLD.push("<b>"+units+"</b>");
@@ -1046,18 +1123,31 @@ App.prototype.stockHistory = function () {
                         resp.CREATED.push("");
                         app.ui.table({
                             id_to_append : "paginate_body",
-                            headers : ["Product Name","Units Sold", "Tax","User Name", "Date Entered"],
-                            values : [resp.PRODUCT_NAME,resp.UNITS_SOLD, resp.TAX_VALUE,resp.USER_NAME, resp.CREATED],
+                            headers : ["Product Name","Type","Units Sold", "Tax","User Name", "Date Entered"],
+                            values : [resp.PRODUCT_NAME,resp.TRAN_TYPE,resp.UNITS_SOLD, resp.TAX_VALUE,resp.USER_NAME, resp.CREATED],
                             include_nums : true,
                             style : "",
                             mobile_collapse : true,
                             transform : {
-                                2 : function(value,index){ //transform col 2 values to money
+                                1: function (value) {
+                                    var narr = "", color = "";
+                                    if (value === "0") {
+                                        narr = "Sale";
+                                        color = "green";
+                                    }
+                                    else if (value === "1") {
+                                        narr = "Reversal of sale";
+                                        color = "red";
+                                    }
+                                    var resp = "<span style='color:" + color + "'>" + narr + "</span>";
+                                    return resp;
+                                },
+                                3 : function(value,index){ //transform col 2 values to money
                                     if(index === (resp.PRODUCT_NAME.length - 1))
                                         return "<b>"+app.formatMoney(value)+"</b>";
                                     return app.formatMoney(value);
                                 },
-                                4 : function(value,index){
+                                5 : function(value,index){
                                     if(index === (resp.PRODUCT_NAME.length - 1))
                                         return "";
                                     return new Date(value).toLocaleString();
@@ -1254,6 +1344,7 @@ App.prototype.createProduct = function () {
         product_expiry_date: data.product_expiry_date.value,
         product_narration: data.product_narration.value,
         product_unit_size : unitSize,
+        max_discount : data.max_discount.value,
         product_parent : $("#product_parent").attr("current-item"),
         tax : data.tax.value,
         commission : data.commission.value,
@@ -1360,6 +1451,7 @@ App.prototype.updateProduct = function () {
             product_expiry_date: data.product_expiry_date.value,
             product_narration: data.product_narration.value,
             product_unit_size : unitSize,
+            max_discount : data.max_discount.value,
             product_parent : $("#product_parent").attr("current-item"),
             tax : data.tax.value,
             commission : data.commission.value,
@@ -1483,7 +1575,7 @@ App.prototype.stockLow = function (handler) {
 };
 
 
-App.prototype.undoSale = function (prodId, prodQty) {
+App.prototype.undoSale = function (prodId, prodQty,transId) {
     var html = "<input type='text' class='form-control' id='undo_sale_narr' placeholder='Reason for Reversal'>";
     var m = app.ui.modal(html, "Undo Transaction", {
         ok: function () {
@@ -1495,7 +1587,8 @@ App.prototype.undoSale = function (prodId, prodQty) {
                 product_qtys: qtys,
                 tran_type: "1",
                 narration: narr,
-                tran_flag: "reversal_of_sale"
+                tran_flag: "reversal_of_sale",
+                previous_trans_id : transId
             };
             //do some stuff like saving to the server
             app.xhr(request, app.dominant_privilege, "transact", {
