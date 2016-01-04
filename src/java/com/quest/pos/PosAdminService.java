@@ -8,6 +8,7 @@ import com.quest.access.common.mysql.NonExistentDatabaseException;
 import com.quest.access.control.Server;
 import com.quest.access.useraccess.Serviceable;
 import com.quest.access.useraccess.services.Message;
+import com.quest.access.useraccess.services.OpenDataService;
 import com.quest.access.useraccess.services.annotations.Endpoint;
 import com.quest.access.useraccess.services.annotations.Model;
 import com.quest.access.useraccess.services.annotations.Models;
@@ -21,6 +22,7 @@ import org.json.JSONObject;
 
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -173,6 +175,7 @@ public class PosAdminService implements Serviceable {
     private static String POS_DATA = "pos_data";
 
     private static boolean isAccessible = true;
+ 
 
     @Override
     public void service() {
@@ -231,15 +234,6 @@ public class PosAdminService implements Serviceable {
         serv.addSafeTable("pos_data", "POS_META_DATA", "*");
         //check that app is activated
         validateActivation(serv);
-        
-        //initialise settings
-        String defaultInterface = serv.getConfig().getInitParameter("default-user-interface");
-        Database db = new Database("user_server");
-        boolean exists = db.ifValueExists("user_interface", "CONF_DATA", "CONF_KEY");
-        if(!exists) {
-            //change the user interface only if none is specified
-            db.doInsert("CONF_DATA", new String[]{"user_interface",defaultInterface});
-        }
     }
 
     @Endpoint(name = "add_resource")
@@ -739,12 +733,12 @@ public class PosAdminService implements Serviceable {
         String extraSql = userName.equals("all") ? "" : "AND COMMISSION_DATA.USER_NAME = '" + userName + "'";
         JSONObject data;
         //what we need
-        String allSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,COMM_VALUE,TRAN_TYPE,COMMISSION_DATA.CREATED "
+        String allSql = "SELECT COMMISSION_DATA.ID,USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,COMM_VALUE,TRAN_TYPE,COMMISSION_DATA.CREATED "
                 + "FROM PRODUCT_DATA,COMMISSION_DATA WHERE PRODUCT_DATA.ID = COMMISSION_DATA.PRODUCT_ID AND "
                 + "COMMISSION_DATA.BUSINESS_ID = ? AND COMMISSION_DATA.CREATED >= ? AND COMMISSION_DATA.CREATED <= ? "
                 + extraSql + " ORDER BY COMMISSION_DATA.CREATED DESC";
 
-        String specificSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,COMM_VALUE,TRAN_TYPE,COMMISSION_DATA.CREATED "
+        String specificSql = "SELECT COMMISSION_DATA.ID,USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,COMM_VALUE,TRAN_TYPE,COMMISSION_DATA.CREATED "
                 + "FROM PRODUCT_DATA,COMMISSION_DATA WHERE PRODUCT_DATA.ID = COMMISSION_DATA.PRODUCT_ID AND "
                 + "COMMISSION_DATA.BUSINESS_ID = ? AND COMMISSION_DATA.PRODUCT_ID = ? AND COMMISSION_DATA.CREATED >= ? AND COMMISSION_DATA.CREATED <= ? "
                 + extraSql + " ORDER BY COMMISSION_DATA.CREATED DESC";
@@ -769,12 +763,12 @@ public class PosAdminService implements Serviceable {
         String extraSql = userName.equals("all") ? "" : "AND TAX_DATA.USER_NAME = '" + userName + "'";
         JSONObject data;
         //what we need
-        String allSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,TAX_VALUE,TRAN_TYPE,TAX_DATA.CREATED "
+        String allSql = "SELECT TAX_DATA.ID,USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,TAX_VALUE,TRAN_TYPE,TAX_DATA.CREATED "
                 + "FROM PRODUCT_DATA,TAX_DATA WHERE PRODUCT_DATA.ID = TAX_DATA.PRODUCT_ID AND "
                 + "TAX_DATA.BUSINESS_ID = ? AND TAX_DATA.CREATED >= ? AND TAX_DATA.CREATED <= ? "
                 + extraSql + " ORDER BY TAX_DATA.CREATED DESC";
 
-        String specificSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,COMM_VALUE,TRAN_TYPE,TAX_DATA.CREATED "
+        String specificSql = "SELECT TAX_DATA.ID,USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,COMM_VALUE,TRAN_TYPE,TAX_DATA.CREATED "
                 + "FROM PRODUCT_DATA,TAX_DATA WHERE PRODUCT_DATA.ID = TAX_DATA.PRODUCT_ID AND "
                 + "TAX_DATA.BUSINESS_ID = ? AND TAX_DATA.PRODUCT_ID = ? AND TAX_DATA.CREATED >= ? AND "
                 + " TAX_DATA.CREATED <= ? " + extraSql + " ORDER BY TAX_DATA.CREATED DESC";
@@ -801,12 +795,12 @@ public class PosAdminService implements Serviceable {
         String extraSql = userName.equals("all") ? "" : "AND DISCOUNT_DATA.USER_NAME = '" + userName + "'";
         JSONObject data;
         //what we need
-        String allSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,DISC_VALUE,TRAN_TYPE,DISCOUNT_DATA.CREATED "
+        String allSql = "SELECT DISCOUNT_DATA.ID,USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,DISC_VALUE,TRAN_TYPE,DISCOUNT_DATA.CREATED "
                 + "FROM PRODUCT_DATA,DISCOUNT_DATA WHERE PRODUCT_DATA.ID = DISCOUNT_DATA.PRODUCT_ID AND "
                 + "DISCOUNT_DATA.BUSINESS_ID = ? AND DISCOUNT_DATA.CREATED >= ? AND DISCOUNT_DATA.CREATED <= ? "
                 + extraSql + " ORDER BY DISCOUNT_DATA.CREATED DESC";
 
-        String specificSql = "SELECT USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,DISC_VALUE,TRAN_TYPE,DISCOUNT_DATA.CREATED "
+        String specificSql = "SELECT DISCOUNT_DATA.ID,USER_NAME,PRODUCT_DATA.PRODUCT_NAME,UNITS_SOLD,DISC_VALUE,TRAN_TYPE,DISCOUNT_DATA.CREATED "
                 + "FROM PRODUCT_DATA,DISCOUNT_DATA WHERE PRODUCT_DATA.ID = DISCOUNT_DATA.PRODUCT_ID AND "
                 + "DISCOUNT_DATA.BUSINESS_ID = ? AND DISCOUNT_DATA.PRODUCT_ID = ? AND DISCOUNT_DATA.CREATED >= ? AND "
                 + " DISCOUNT_DATA.CREATED <= ? " + extraSql + " ORDER BY DISCOUNT_DATA.CREATED DESC";
@@ -876,7 +870,7 @@ public class PosAdminService implements Serviceable {
         serv.messageToClient(worker);
     }
 
-    private JSONObject getAccountBalance(ClientWorker worker, String table, String column) throws JSONException {
+    private JSONObject getAccountBalance(ClientWorker worker, String table, String column,String resourceName) throws JSONException {
         //get the amount of taxes or commissions earned for the specified period
         JSONObject requestData = worker.getRequestData();
         String beginDate = requestData.optString("start_date") + ":00";
@@ -890,12 +884,6 @@ public class PosAdminService implements Serviceable {
         for (int x = 0; x < col.length(); x++) {
             double value = col.optDouble(x, 0);
             total += value;
-        }
-        String resourceName = "auto expense";
-        if (table.equals("COMMISSION_DATA")) {
-            resourceName = "Commissions";
-        } else if (table.equals("TAX_DATA")) {
-            resourceName = "Taxes";
         }
         JSONObject obj = new JSONObject();
         obj.put("ID", new UniqueRandom(60).nextMixedRandom());
@@ -924,23 +912,25 @@ public class PosAdminService implements Serviceable {
         String endDate = requestData.optString("end_date") + " 59";
         JSONObject expData = db.query("SELECT * FROM EXPENSE_DATA WHERE BUSINESS_ID = ? AND CREATED >= ? AND CREATED <= ? ", busId, beginDate, endDate);
         //commissions and taxes are in built expenses
-        Database db1 = new Database("user_server");
-        JSONObject settings = db1.query("SELECT * FROM CONF_DATA");
-        int commIndex = settings.optJSONArray("CONF_KEY").toList().indexOf("add_comm");
-        int taxIndex = settings.optJSONArray("CONF_KEY").toList().indexOf("add_tax");
-
-        String hasTax = taxIndex == -1 ? "0" : settings.optJSONArray("CONF_VALUE").toList().get(taxIndex).toString();
-        String hasComm = commIndex == -1 ? "0" : settings.optJSONArray("CONF_VALUE").toList().get(commIndex).toString();
-
-        JSONObject comm = getAccountBalance(worker, "COMMISSION_DATA", "COMM_VALUE");
-        JSONObject tax = getAccountBalance(worker, "TAX_DATA", "TAX_VALUE");
-
-        if (hasTax.equals("1")) {
+      
+        boolean hasTax = OpenDataService.getSetting("add_tax").equals("1");
+        boolean hasComm = OpenDataService.getSetting("add_comm").equals("1");
+        boolean hasDisc = OpenDataService.getSetting("add_discounts").equals("1");
+        
+        JSONObject comm = getAccountBalance(worker, "COMMISSION_DATA", "COMM_VALUE","Commissions Paid");
+        JSONObject tax = getAccountBalance(worker, "TAX_DATA", "TAX_VALUE","Taxes");
+        JSONObject disc = getAccountBalance(worker, "DISCOUNT_DATA", "DISC_VALUE","Discounts Allowed");
+        
+        if (hasTax) {
             expData = mapToJSONArrays(expData, tax);
         }
 
-        if (hasComm.equals("1")) {
+        if (hasComm) {
             expData = mapToJSONArrays(expData, comm);
+        }
+        
+        if(hasDisc){
+            expData = mapToJSONArrays(expData, disc);
         }
 
         return expData;

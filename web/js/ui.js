@@ -1,14 +1,8 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 function UI() {
 
 }
 
-UI.prototype.modal = function (html, title, func) {
+UI.prototype.modal = function (content, title, func) {
     var cancelBtn = "";
     var okBtn = "";
     if(func.cancelText){
@@ -26,7 +20,7 @@ UI.prototype.modal = function (html, title, func) {
             "<h4 class='modal-title'>" + title + "</h4>" +
             "</div>" +
             "<div class='modal-body'>" +
-            "<p id='modal_content_area'>" + html + "</p>" +
+            "<p id='modal_content_area'>" + content + "</p>" +
             "</div>" +
             "<div class='modal-footer'>" +
             cancelBtn +
@@ -115,16 +109,21 @@ UI.prototype.table = function (options) {
 
     var id = !options.id ? "table_" + Math.floor(Math.random() * 1000000) : options.id;
     var table = $("<table class='table table-condensed' id='" + id + "' style='" + options.style + "' >");
+    var thead = $("<thead>");
     var tr = $("<tr>");
     if (options.include_nums) {
         options.headers.unshift("No");
     }
+    
+    
     for (var x = 0; x < options.headers.length; x++) {
         var th = $("<th>");
         th.html(options.headers[x]);
         tr.append(th);
     }
-    table.append(tr);
+    thead.append(tr);
+    table.append(thead);
+    var tbody = $("<tbody>");
     for (var x = 0; x < options.values[0].length; x++) {
         var tr = $("<tr>");
         var numTd = null;
@@ -169,10 +168,14 @@ UI.prototype.table = function (options) {
             }
             tr.append(td);
         }
-        table.append(tr);
+        tbody.append(tr);
     }
+    table.append(tbody);
     $("#" + options.id_to_append).append(table);
     table.addClass(options.class);
     if(options.onRender) options.onRender(id); //say that the table has finished rendering
+    if (options.sortable) {
+        $("#"+id).tablesorter({cssInfoBlock : "avoid-sort"});
+    }
     return id;
 };

@@ -238,7 +238,7 @@ App.prototype.paginate = function (options) {
                         app.runLater(2000, function () {
                             $("#paginate_button_area").css("display", "block");
                             $("#content_area").css("margin-top", "60px");
-                            $("#paginate_card").css("width", "90%");
+                            $("#paginate_card").css("width", "98%");
                             $("#paginate_card").css("border", "1px solid rgb(173, 216, 230)");
                             $("#paginate_title").html(currTitle);
                         });
@@ -415,8 +415,7 @@ App.prototype.renderDom = function(obj,toAppend){
             elem.bind(event,obj.events[event]);
         });
     }
-    var hr = $("<hr>");
-    toAppend.append(elem).append(hr);
+    toAppend.append(elem);
 };
 
 App.prototype.briefShow = function(options){
@@ -428,5 +427,6 @@ App.prototype.briefShow = function(options){
        m.modal('hide'); 
     });
 };
+
 
 window.app = new App();

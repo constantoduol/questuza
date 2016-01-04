@@ -1,10 +1,3 @@
-/* 
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-
 AppData.prototype.formData = {
     onload: AppData.prototype.onload,
     login: {
@@ -58,18 +51,18 @@ AppData.prototype.formData = {
     },
     change_pass: {
         fields: {
-            user_name: {required: true, message: "Email address is required"},
-            old_password: {required: true, message: "Old password is required"},
-            new_password: {required: true, message: "New password is required"},
-            confirm_password: {required: true, message: "Confirm password is required"}
+            user_name : {required : true},
+            old_pin: {required: true, message: "Old pin is required"},
+            new_pin: {required: true, message: "New pin is required"},
+            confirm_new_pin: {required: true, message: "Confirm pin is required"}
         },
         error_space: "error_space_login",
         load_area: "error_space_login",
         error_message: "Well,it seems the server is unavailable",
-        passwords_not_match: "New password and confirm password do not match",
-        password_not_valid: "Password should be more than 4 characters, have at least one number and be less than 50 characters",
+        passwords_not_match: "New pin and confirm pin do not match",
+        password_not_valid: "Pin should be numbers only",
         messages: {
-            false: "The old password entered is invalid"
+            false: "The old pin entered is invalid"
         }
     },
     sale: {
@@ -152,7 +145,6 @@ AppData.prototype.formData = {
                                     }
                                 }
                             });
-                            app.fetchProductCategory();
                         }
                     }
                 },

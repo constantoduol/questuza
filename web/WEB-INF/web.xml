@@ -19,14 +19,6 @@
             <param-name>default-password</param-name>
             <param-value>0112358</param-value>
         </init-param>
-         <init-param>
-            <param-name>sendgrid-username</param-name>
-            <param-value>constant.oduol</param-value>
-        </init-param>
-        <init-param>
-            <param-name>sendgrid-password</param-name>
-            <param-value></param-value>
-        </init-param>
         <init-param>
             <param-name>password-expires</param-name>
             <param-value>0</param-value>
@@ -50,11 +42,11 @@
          <init-param>
             <param-name>external-services</param-name>
             <param-value>
+             com.quest.access.useraccess.services.OpenDataService,
              com.quest.pos.PosAdminService,
              com.quest.pos.PosSaleService,
              com.quest.pos.PosMiddleService,
-             com.quest.access.useraccess.services.UserService,
-             com.quest.access.useraccess.services.OpenDataService
+             com.quest.access.useraccess.services.UserService
             </param-value>
         </init-param>
          <init-param>

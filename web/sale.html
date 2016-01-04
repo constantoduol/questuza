@@ -20,6 +20,7 @@ and open the template in the editor.
         <script type="text/javascript" src="js/bootstrap3-typeahead.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.js"></script>
         <script type="text/javascript" src="js/jquery.hotkeys.js"></script>
+        <script type="text/javascript" src="js/jquery.tablesorter.min.js"></script>
         <script type="text/javascript" src="js/ui.js"></script>
         <script type="text/javascript" src="js/onload.js"></script>
 	<script type="text/javascript" src="js/excel.js"></script>
@@ -37,7 +38,7 @@ and open the template in the editor.
     <body style="padding:0px">
         <div id="content_area" style='margin-top: 0px'>
             <div class="card_touch" id="menu_card">
-                <a href="#" id="logout_link" class="btn btn_touch" title="Sign Out" style="background-color: rgba(255, 0, 0, 0.6)">Sign out</a> 
+                <a href="#" id="logout_link" class="btn btn_touch" title="Sign Out" style="background-color: orange">Sign out</a> 
                 <a href="#" id="home_link" class="btn btn_touch">Home</a> 
                  <a href="#" id="todays_sale_link" class="btn btn_touch">T/Sales</a> 
                 <a href="#" id="users_report_link" class="btn btn_touch" style="visibility: hidden">U/Reports</a> 
@@ -46,9 +47,8 @@ and open the template in the editor.
                 <a href="#" id="commit_link" class="btn btn_touch" style="visibility:  hidden">Commit</a> 
                 <a href="#" id="clear_sale_link" class="btn btn_touch" style="visibility:  hidden">Clear Sale</a>
             </div>
-           
+           <div id="error_space_sale" class="error" style="height: 10px;" ></div>
           <div class="card_touch" id="product_category_card" style="overflow: auto">
-            <div id="error_space_sale" class="error" ></div>
             <table id="category_area" >
                 
             </table>

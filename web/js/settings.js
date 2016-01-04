@@ -12,7 +12,7 @@ App.prototype.settings = {
         option_values : ["1","0"],
         required : true,
         selected : "1",
-        label : "Enable undo sales for sales persons"
+        label : "Enable reverse sales for sales persons"
     },
     add_tax: {
         type: "select",
@@ -50,6 +50,24 @@ App.prototype.settings = {
         selected : "1",
         label : "Allow discounts?"
     },
+    add_discounts: {
+        type: "select",
+        id : "add_discounts",
+        option_names: ["Yes", "No"],
+        option_values: ["1", "0"],
+        required : true,
+        selected : "1",
+        label : "Add discounts as an expense to profit and loss"
+    },
+    currency: {
+        type: "select",
+        id: "currency",
+        option_names: ["KES", "USD"],
+        option_values: ["KES", "USD"],
+        required: true,
+        selected: "KES",
+        label: "Currency"
+    },
     track_stock:{
         type: "select",
         id : "track_stock",
@@ -79,7 +97,7 @@ App.prototype.settings = {
     receipt_header: {
         type : "text",
         id : "receipt_header",
-        required : true,
+        required : false,
         value : "",
         label : "Receipt Header",
         "class" : "form-control"
@@ -87,7 +105,7 @@ App.prototype.settings = {
     receipt_footer: {
         type : "text",
         id : "receipt_footer",
-        required : true,
+        required : false,
         value : "",
         label : "Receipt Footer",
         "class" : "form-control"

@@ -1,5 +1,8 @@
 App.prototype.brand = function(){
-  var html = "This product is a trademark of Quest Pico at <a href='http://www.questpico.com'>www.questpico.com</a><br/>Talk to us today at <a href='mailto:info@questpico.com'>info@questpico.com</a>";
+  var html = "This product is a trademark of Quest Pico at \n\
+        <a href='http://www.questpico.com'>www.questpico.com</a><br/>Talk\n\
+         to us today at <a href='mailto:info@questpico.com'>info@questpico.com</a>\n\
+        <br>Call us today : +254 771 048 762";
   app.ui.modal(html,"About",{
       cancelText : "Done"
   });  
@@ -56,10 +59,16 @@ App.prototype.saveSettings = function(){
         success: function (resp) {
             var r = resp.response.data;
             if (r === "success") {
-                alert("Settings saved successfully");
+                app.briefShow({
+                    title : "Info",
+                    content : "Settings saved successfully"
+                });
             }
             else if (r === "fail") {
-                alert(resp.response.reason);
+                app.briefShow({
+                    title: "Info",
+                    content : resp.response.reason
+                });
             }
         }
     });
@@ -344,13 +353,14 @@ App.prototype.profitAndLoss = function () {
         load: true,
         success: function (resp) {
             var pandl = resp.response.data;
+            console.log(pandl);
             app.paginate({
                 save_state: true,
                 save_state_area: "content_area",
                 title: "Profit And Loss between " + data.start_date.value + " and " + data.end_date.value + " ",
                 onload_handler: app.pages.expenses,
                 onload: function () {
-                    var items = ["<b>Cost of Sales</b>", "<b>Opening Stock</b>", "<b>Purchases</b>",
+                    var items = ["<b>Sales</b>", "<b>Opening Stock</b>", "<b>Purchases</b>",
                         "<b>Less Closing Stock</b>", "<b>Cost of Goods sold</b>", "<b>Gross Profit</b>", "<b>Expenses</b>"];
                     var types = [1, 0, 0, 0, 0, 1, ""];
                     var costOfGoodsSold = pandl.opening_stock + pandl.cost_of_goods_bought_bp - pandl.closing_stock;
@@ -418,10 +428,10 @@ App.prototype.profitAndLoss = function () {
                             debits.push("");
                         }
                     });
-                   
-                      app.ui.table({
+                    var curr = app.getSetting("currency");
+                    app.ui.table({
                         id_to_append : "paginate_body",
-                        headers :  ["Items", "Expenses", "Revenues"],
+                        headers :  ["Items", curr, curr],
                         values :  [items, debits, credits],
                         include_nums : false,
                         style : ""
@@ -797,7 +807,7 @@ App.prototype.goodsStockHistory = function () {
                     var totalSP = 0;
                     var totalBP = 0;
                     var profits = 0;
-                    var costOfSales = 0;
+                    var sales = 0;
                     var costOfGoods = 0;
                     var undos = [];
                     $.each(resp.TRAN_TYPE, function (index) {
@@ -813,19 +823,20 @@ App.prototype.goodsStockHistory = function () {
                         else if(flag === "stock_out"){
                             color = "orange";
                         }
+                        else if(flag === "reversal_of_sale"){
+                            color = "blue";
+                        }
 
                         var qty = type === "1" ? parseFloat(resp.STOCK_QTY[index]) : -parseFloat(resp.STOCK_QTY[index]);
                         var amountSP = type === "1" ? parseFloat(resp.STOCK_COST_SP[index]) : -parseFloat(resp.STOCK_COST_SP[index]);
                         var amountBP = type === "1" ? parseFloat(resp.STOCK_COST_BP[index]) : -parseFloat(resp.STOCK_COST_BP[index]);
-                        var profit = parseFloat(resp.PROFIT[index]);
-
-                       
+                        var profit = type === "1" ? parseFloat(resp.PROFIT[index]) : -parseFloat(resp.PROFIT[index]);
+                                               
                         var span = type === "0" ? "Stock Decrease" : "Stock Increase";
                         resp.TRAN_TYPE[index] = "<span style='color : " + color + "'>" + span + "<span>";
                         var transId = resp.ID[index];
-                        var undo = "<a href='#' onclick='app.undoSale(\"" + resp.PRODUCT_ID[index] + "\",\"" + resp.PRODUCT_ID[index] + "\"\n\
-                                    ,\"" + transId + "\")' title='Undo sale'>Undo Sale</a>";
-
+                        
+                        var undo = "<a href='#' onclick='app.undoSale(\"" + transId + "\")' title='Undo sale'>Undo Sale</a>";
                         flag === "sale_to_customer"  ? undos.push(undo) : undos.push("");
 
                         var time = new Date(resp.CREATED[index]).toLocaleString();
@@ -834,45 +845,82 @@ App.prototype.goodsStockHistory = function () {
                         resp.STOCK_QTY[index] = "<span style='color :" + color + "'>" + resp.STOCK_QTY[index] + "</span>";
                         resp.STOCK_COST_SP[index] = "<span style='color :" + color + "'>" + app.formatMoney(resp.STOCK_COST_SP[index]) + "</span>";
                         resp.STOCK_COST_BP[index] = "<span style='color :" + color + "'>" + app.formatMoney(resp.STOCK_COST_BP[index]) + "</span>";
-                        resp.PROFIT[index] = app.formatMoney(resp.PROFIT[index]);
+                        resp.PROFIT[index] = "<span style='color :" + color + "'>" + app.formatMoney(resp.PROFIT[index]) + "</span>";
 
                         totalQty = totalQty + qty;
                         totalSP = totalSP + amountSP;
                         totalBP = totalBP + amountBP;
-                        flag = "reversal_of_sale" ? profits = profits - profit : profits = profits + profit;;
-                        flag === "sale_to_customer" ? costOfSales = costOfSales - amountSP : 0;
-                        flag === "sale_to_customer" ? costOfGoods = costOfGoods - amountBP : 0;
+                        if(flag === "sale_to_customer"){
+                            profits = profits - profit;
+                            sales = sales - amountSP;
+                            costOfGoods = costOfGoods - amountBP;
+                        }
+                        else if(flag === "reversal_of_sale"){
+                            profits = profits - profit;
+                            sales = sales - amountSP;
+                            costOfGoods = costOfGoods - amountBP;
+                        }
+                        
                     });
-                    resp.STOCK_COST_BP.push("<b>" + app.formatMoney(totalBP) + "</b>");
-                    resp.STOCK_COST_SP.push("<b>" + app.formatMoney(totalSP) + "</b>");
-                    resp.STOCK_QTY.push("<b>" + totalQty + "</b>");
-                    resp.PROFIT.push("<b>" + app.formatMoney(profits) + "</b>");
-                    resp.PRODUCT_NAME.push("<b>Totals</b>");
-                    resp.NARRATION.push(undefined);
-                    resp.CREATED.push(undefined);
                     app.ui.table({
                         id_to_append : "paginate_body",
-                        headers :  ["Product Name", "Stock Value/BP", "Stock Value/SP ", "Stock Qty", "Profit", "Entry Type", "Narration", "Entry Date", "Undo Sale"],
-                        values :  [resp.PRODUCT_NAME, resp.STOCK_COST_BP, resp.STOCK_COST_SP, resp.STOCK_QTY, resp.PROFIT, resp.TRAN_TYPE, resp.NARRATION, resp.CREATED, undos],
-                        include_nums : true,
+                        headers :  ["Ref","Product Name", "Stock Value/BP", "Stock Value/SP ", "Stock Qty", "Margin", "Entry Type", "Narration", "Entry Date", "Undo Sale"],
+                        values :  [resp.ID,resp.PRODUCT_NAME, resp.STOCK_COST_BP, resp.STOCK_COST_SP, resp.STOCK_QTY, resp.PROFIT, resp.TRAN_TYPE, resp.NARRATION, resp.CREATED, undos],
+                        include_nums : false,
                         style : "",
                         mobile_collapse : true,
+                        sortable : true, //this table can be sorted
                         summarize : {
-                            cols : [6],
-                            lengths : [30]
+                            cols : [0,7],
+                            lengths : [4,30]
+                        },  
+                        onRender: function (id) {
+                            $("#" + id).append(app.footerRow([
+                                "","Totals",
+                                app.formatMoney(totalBP),
+                                app.formatMoney(totalSP),
+                                totalQty,app.formatMoney(profits)
+                            ],"font-weight:bold"));
                         }
                     });
                     var summary = $("<table class='summary table'><tr>"+
-                                    "<tr><th>Cost Of Goods</th><th>Cost Of Sales</th><th>Profit</th></tr>"+
+                                    "<tr><th>Cost Of Goods</th><th>Sales</th><th>Margin</th></tr>"+
                                     "<tr><td>"+app.formatMoney(costOfGoods) + "</td>"+
-                                    "<td>" + app.formatMoney(costOfSales) + "</td>"+
+                                    "<td>" + app.formatMoney(sales) + "</td>"+
                                     "<td>" + app.formatMoney(profits) + "</td></tr></table>");
                     $("#paginate_body").append(summary);
+                    
+                    $("#paginate_body").append(app.colorKey());
                 }
             });
 
         }
     });
+};
+
+App.prototype.footerRow = function(values,style){
+    var tbody = $("<tbody class='avoid-sort'>");
+    var tr = $("<tr style = "+style+">");
+    $.each(values,function(x){
+        var td = $("<td>");
+        td.append(values[x]);
+        tr.append(td);
+    });
+    tbody.append(tr);
+    return tbody;
+};
+
+App.prototype.colorKey = function(){
+   var colorKey = "<div style='font-size:10px;display:flex'>\n\
+                   <div style='background:green;height:10px;width:10px;margin-left:5px'></div>\n\
+                   <div style='margin-left:5px;line-height:1'>stock increase from new stock</div>\n\
+                   <div style='background:red;height:10px;width:10px;margin-left:5px'></div>\n\
+                   <div style='margin-left:5px;line-height:1'>stock decrease from sale to customer</div> \n\
+                   <div style='background:orange;height:10px;width:10px;margin-left:5px'></div>\n\
+                   <div style='margin-left:5px;line-height:1'>stock decrease from deductions by admin</div>\n\
+                   <div style='background:blue;height:10px;width:10px;margin-left:5px'></div>\n\
+                   <div style='margin-left:5px;line-height:1'>stock increase from reversal of sale</div></div>";
+    return colorKey;
 };
 
 App.prototype.servicesStockHistory = function () {
@@ -913,14 +961,17 @@ App.prototype.servicesStockHistory = function () {
                         var type = resp.TRAN_TYPE[index];
                         var flag = resp.TRAN_FLAG[index];
                         var color;
-                        if(flag === "sale_to_customer"){
+                        if (flag === "sale_to_customer") {
                             color = "red";
                         }
-                        else if(flag === "stock_in"){
+                        else if (flag === "stock_in") {
                             color = "green";
                         }
-                        else if(flag === "stock_out"){
+                        else if (flag === "stock_out") {
                             color = "orange";
+                        }
+                        else if (flag === "reversal_of_sale") {
+                            color = "blue";
                         }
 
                         var qty = type === "1" ? parseFloat(resp.STOCK_QTY[index]) : -parseFloat(resp.STOCK_QTY[index]);
@@ -930,8 +981,7 @@ App.prototype.servicesStockHistory = function () {
                         resp.TRAN_TYPE[index] = "<span style='color : " + color + "'>" + span + "<span>";
                         
                         var transId = resp.ID[index];
-                        var undo = "<a href='#' onclick='app.undoSale(\"" + resp.PRODUCT_ID[index] + "\",\"" + resp.PRODUCT_ID[index] + "\"\n\
-                                    ,\"" + transId + "\")' title='Undo sale'>Undo Sale</a>";
+                        var undo = "<a href='#' onclick='app.undoSale(\"" + transId + "\")' title='Undo sale'>Undo Sale</a>";
 
                         flag === "sale_to_customer" ? undos.push(undo) : undos.push("");
 
@@ -944,27 +994,36 @@ App.prototype.servicesStockHistory = function () {
                         totalQty = totalQty + qty;
                         totalSP = totalSP + amountSP;
                        
-                        flag === "sale_to_customer" ? costOfSales = costOfSales - amountSP : 0;
-                    });
+                        if (flag === "sale_to_customer") {
+                            costOfSales = costOfSales - amountSP;
+                        }
+                        else if (flag === "reversal_of_sale") {
+                            costOfSales = costOfSales - amountSP;
 
-                    resp.STOCK_COST_SP.push("<b>" + app.formatMoney(totalSP) + "</b>");
-                    resp.STOCK_QTY.push("<b>" + totalQty + "</b>");
-                    resp.PRODUCT_NAME.push("<b>Totals</b>");
-                    resp.NARRATION.push(undefined);
-                    resp.CREATED.push(undefined);
-                    app.ui.table({
-                        id_to_append : "paginate_body",
-                        headers : ["Product Name", "Cost ", "Qty", "Entry Type", "Narration", "Entry Date", "Undo Sale"],
-                        values :   [resp.PRODUCT_NAME, resp.STOCK_COST_SP, resp.STOCK_QTY, resp.TRAN_TYPE, resp.NARRATION, resp.CREATED, undos],
-                        include_nums : true,
-                        style : "",
-                        mobile_collapse : true,
-                        summarize : {
-                            cols : [4],
-                            lengths : [30]
                         }
                     });
-                    var summary = $("<div class='summary'><span>Cost Of Sales: " + app.formatMoney(costOfSales) + "</span></div>");
+
+                    app.ui.table({
+                        id_to_append : "paginate_body",
+                        headers : ["Ref","Product Name", "Cost ", "Qty", "Entry Type", "Narration", "Entry Date", "Undo Sale"],
+                        values :   [resp.ID,resp.PRODUCT_NAME, resp.STOCK_COST_SP, resp.STOCK_QTY, resp.TRAN_TYPE, resp.NARRATION, resp.CREATED, undos],
+                        include_nums : false,
+                        style : "",
+                        mobile_collapse : true,
+                        sortable : true,
+                        summarize : {
+                            cols : [0,5],
+                            lengths : [4,30]
+                        },
+                        onRender : function(tableId){
+                            $("#" + tableId).append(app.footerRow([
+                                "", "Totals",
+                                app.formatMoney(totalSP),
+                                totalQty,"","","",""
+                            ], "font-weight:bold"));
+                        }
+                    });
+                    var summary = $("<div class='summary'><span>Sales: " + app.formatMoney(costOfSales) + "</span></div>");
                     $("#paginate_body").append(summary);
                 }
             });
@@ -992,43 +1051,48 @@ App.prototype.stockHistory = function () {
                     onload_handler: app.pages.stock_history,
                     onload: function () {
                         var totalComm = 0, units = 0;
-                        $.each(resp.COMM_VALUE,function(x){
+                        $.each(resp.COMM_VALUE, function (x) {
                             var type = resp.TRAN_TYPE[x];
-                            totalComm =  type === "0" ?  parseFloat(resp.COMM_VALUE[x]) + totalComm : parseFloat(resp.COMM_VALUE[x]) - totalComm ;
-                            units = type === "0" ? parseFloat(resp.UNITS_SOLD[x]) + units : parseFloat(resp.UNITS_SOLD[x]) - units ;
+                            var color, narr;
+                            var comm = parseFloat(resp.COMM_VALUE[x]);
+                            var unit = parseFloat(resp.UNITS_SOLD[x]);
+
+                            if (type === "0") {
+                                narr = "Increase";
+                                color = "green";
+                                totalComm = totalComm + comm;
+                                units = units + unit;
+                            }
+                            else if (type === "1") {
+                                narr = "Decrease";
+                                color = "red";
+                                totalComm = totalComm - comm;
+                                units = units - unit;
+                            }
+                            resp.UNITS_SOLD[x] = "<span style='color:" + color + "'>" + unit + "</span>";
+                            resp.COMM_VALUE[x] = "<span style='color:" + color + "'>" + app.formatMoney(comm) + "</span>";
+                            resp.TRAN_TYPE[x] = "<span style='color:" + color + "'>" + narr + "</span>";
                         });
                         resp.PRODUCT_NAME.push("<b>Totals</b>");
                         resp.UNITS_SOLD.push("<b>"+units+"</b>");
-                        resp.COMM_VALUE.push(totalComm);
+                        resp.COMM_VALUE.push(app.formatMoney(totalComm));
                         resp.USER_NAME.push("");
                         resp.CREATED.push("");
+                        resp.TRAN_TYPE.push("");
+                        resp.ID.push("");
                         app.ui.table({
                             id_to_append : "paginate_body",
-                            headers : ["Product Name","Type","Units Sold", "Commission","User Name", "Date Entered"],
-                            values : [resp.PRODUCT_NAME,resp.TRAN_TYPE,resp.UNITS_SOLD,resp.COMM_VALUE,resp.USER_NAME, resp.CREATED],
+                            headers : ["Ref","Product Name","Type","Units Sold", "Commission","User Name", "Date Entered"],
+                            values : [resp.ID,resp.PRODUCT_NAME,resp.TRAN_TYPE,resp.UNITS_SOLD,resp.COMM_VALUE,resp.USER_NAME, resp.CREATED],
                             include_nums : true,
                             style : "",
                             mobile_collapse : true,
+                            summarize: {
+                                cols: [0],
+                                lengths: [4]
+                            },
                             transform : {
-                                1 : function(value){
-                                    var narr = "", color = "";
-                                    if (value === "0") {
-                                        narr = "Sale";
-                                        color = "green";
-                                    }
-                                    else if (value === "1") {
-                                        narr = "Reversal of sale";
-                                        color = "red";
-                                    }
-                                    var resp = "<span style='color:" + color + "'>" + narr + "</span>";
-                                    return resp;
-                                },
-                                3 : function(value,index){ //transform col 2 values to money
-                                    if(index === (resp.PRODUCT_NAME.length - 1))
-                                        return "<b>"+app.formatMoney(value)+"</b>";
-                                    return app.formatMoney(value);
-                                },
-                                5 : function(value,index){
+                                6 : function(value,index){
                                     if(index === (resp.PRODUCT_NAME.length - 1))
                                         return "";
                                     return new Date(value).toLocaleString();
@@ -1054,41 +1118,46 @@ App.prototype.stockHistory = function () {
                         var totalDisc = 0, units = 0;
                         $.each(resp.DISC_VALUE, function (x) {
                             var type = resp.TRAN_TYPE[x];
-                            totalDisc = type === "0" ? parseFloat(resp.DISC_VALUE[x]) + totalDisc : parseFloat(resp.DISC_VALUE[x]) - totalDisc;
-                            units = type === "0" ? parseFloat(resp.UNITS_SOLD[x]) + units : parseFloat(resp.UNITS_SOLD[x]) - units;
+                            var color,narr;
+                            var disc = parseFloat(resp.DISC_VALUE[x]);
+                            var unit = parseFloat(resp.UNITS_SOLD[x]);
+
+                            if (type === "0") {
+                                narr = "Increase";
+                                color = "green";
+                                totalDisc = totalDisc + disc;
+                                units = units + unit;
+                            }
+                            else if (type === "1") {
+                                narr = "Decrease";
+                                color = "red";
+                                totalDisc = totalDisc - disc;
+                                units = units - unit;
+                            }
+                            resp.UNITS_SOLD[x] = "<span style='color:" + color + "'>" + unit + "</span>";
+                            resp.DISC_VALUE[x] = "<span style='color:" + color + "'>" + app.formatMoney(disc) + "</span>";
+                            resp.TRAN_TYPE[x] = "<span style='color:" + color + "'>" + narr + "</span>";
                         });
                         resp.PRODUCT_NAME.push("<b>Totals</b>");
                         resp.UNITS_SOLD.push("<b>" + units + "</b>");
-                        resp.DISC_VALUE.push(totalDisc);
+                        resp.DISC_VALUE.push(app.formatMoney(totalDisc));
                         resp.USER_NAME.push("");
                         resp.CREATED.push("");
+                        resp.TRAN_TYPE.push("");
+                        resp.ID.push("");
                         app.ui.table({
                             id_to_append: "paginate_body",
-                            headers: ["Product Name", "Type", "Units Sold", "Discount", "User Name", "Date Entered"],
-                            values: [resp.PRODUCT_NAME,resp.TRAN_TYPE, resp.UNITS_SOLD, resp.DISC_VALUE, resp.USER_NAME, resp.CREATED],
+                            headers: ["Ref","Product Name", "Type", "Units Sold", "Discount", "User Name", "Date Entered"],
+                            values: [resp.ID,resp.PRODUCT_NAME,resp.TRAN_TYPE, resp.UNITS_SOLD, resp.DISC_VALUE, resp.USER_NAME, resp.CREATED],
                             include_nums: true,
                             style: "",
                             mobile_collapse: true,
+                            summarize: {
+                                cols: [0],
+                                lengths: [4]
+                            },
                             transform: {
-                                1: function (value) {
-                                    var narr = "", color = "";
-                                    if(value === "0"){
-                                        narr = "Sale";
-                                        color = "green";
-                                    }
-                                    else if(value === "1"){
-                                        narr = "Reversal of sale";
-                                        color = "red";
-                                    }
-                                    var resp = "<span style='color:" + color + "'>" + narr + "</span>";
-                                    return resp;
-                                },
-                                3: function (value, index) { //transform col 2 values to money
-                                    if (index === (resp.PRODUCT_NAME.length - 1))
-                                        return "<b>" + app.formatMoney(value) + "</b>";
-                                    return app.formatMoney(value);
-                                },
-                                5: function (value, index) {
+                                6: function (value, index) {
                                     if (index === (resp.PRODUCT_NAME.length - 1))
                                         return "";
                                     return new Date(value).toLocaleString();
@@ -1111,43 +1180,48 @@ App.prototype.stockHistory = function () {
                     onload_handler: app.pages.stock_history,
                     onload: function () {
                         var totalTax = 0, units = 0;
-                        $.each(resp.TAX_VALUE,function(x){
+                        $.each(resp.TAX_VALUE, function (x) {
                             var type = resp.TRAN_TYPE[x];
-                            totalTax = type === "0" ? parseFloat(resp.COMM_VALUE[x]) + totalTax : parseFloat(resp.COMM_VALUE[x]) - totalTax;
-                            units = type === "0" ? parseFloat(resp.UNITS_SOLD[x]) + units : parseFloat(resp.UNITS_SOLD[x]) - units;
+                            var color, narr;
+                            var tax = parseFloat(resp.TAX_VALUE[x]);
+                            var unit = parseFloat(resp.UNITS_SOLD[x]);
+
+                            if (type === "0") {
+                                narr = "Increase";
+                                color = "green";
+                                totalTax = totalTax + tax;
+                                units = units + unit;
+                            }
+                            else if (type === "1") {
+                                narr = "Decrease";
+                                color = "red";
+                                totalTax = totalTax - tax;
+                                units = units - unit;
+                            }
+                            resp.UNITS_SOLD[x] = "<span style='color:" + color + "'>" + unit + "</span>";
+                            resp.TAX_VALUE[x] = "<span style='color:" + color + "'>" + app.formatMoney(tax) + "</span>";
+                            resp.TRAN_TYPE[x] = "<span style='color:" + color + "'>" + narr + "</span>";
                         });
                         resp.PRODUCT_NAME.push("<b>Totals</b>");
                         resp.UNITS_SOLD.push("<b>"+units+"</b>");
-                        resp.TAX_VALUE.push(totalTax);
+                        resp.TAX_VALUE.push(app.formatMoney(totalTax));
                         resp.USER_NAME.push("");
                         resp.CREATED.push("");
+                        resp.TRAN_TYPE.push("");
+                        resp.ID.push("");
                         app.ui.table({
                             id_to_append : "paginate_body",
-                            headers : ["Product Name","Type","Units Sold", "Tax","User Name", "Date Entered"],
-                            values : [resp.PRODUCT_NAME,resp.TRAN_TYPE,resp.UNITS_SOLD, resp.TAX_VALUE,resp.USER_NAME, resp.CREATED],
+                            headers : ["Ref","Product Name","Type","Units Sold", "Tax","User Name", "Date Entered"],
+                            values : [resp.ID,resp.PRODUCT_NAME,resp.TRAN_TYPE,resp.UNITS_SOLD, resp.TAX_VALUE,resp.USER_NAME, resp.CREATED],
                             include_nums : true,
                             style : "",
                             mobile_collapse : true,
+                            summarize: {
+                                cols: [0],
+                                lengths: [4]
+                            },
                             transform : {
-                                1: function (value) {
-                                    var narr = "", color = "";
-                                    if (value === "0") {
-                                        narr = "Sale";
-                                        color = "green";
-                                    }
-                                    else if (value === "1") {
-                                        narr = "Reversal of sale";
-                                        color = "red";
-                                    }
-                                    var resp = "<span style='color:" + color + "'>" + narr + "</span>";
-                                    return resp;
-                                },
-                                3 : function(value,index){ //transform col 2 values to money
-                                    if(index === (resp.PRODUCT_NAME.length - 1))
-                                        return "<b>"+app.formatMoney(value)+"</b>";
-                                    return app.formatMoney(value);
-                                },
-                                5 : function(value,index){
+                                6 : function(value,index){
                                     if(index === (resp.PRODUCT_NAME.length - 1))
                                         return "";
                                     return new Date(value).toLocaleString();
@@ -1355,12 +1429,18 @@ App.prototype.createProduct = function () {
         load: true,
         success: function (data) {
             if (data.response.data === "SUCCESS") {
-                app.showMessage(app.context.create_product);
+                app.briefShow({
+                    title : "Info",
+                    content : app.context.create_product
+                });
                 $("#product_parent").val("");
                 $("#product_parent").removeAttr("current-item");
             }
             else if (data.response.data === "FAIL") {
-                app.showMessage(data.response.reason);
+                app.briefShow({
+                    title: "Info",
+                    content: data.response.reason
+                });
             }
         }
     });
@@ -1382,10 +1462,16 @@ App.prototype.deleteProduct = function () {
         success: function (data) {
             console.log(data);
             if (data.response.data === "SUCCESS") {
-                app.showMessage(app.context.product_deleted);
+                app.briefShow({
+                    title: "Info",
+                    content: app.context.product_deleted
+                });
             }
             else if (data.response.data === "FAIL") {
-                app.showMessage(data.response.reason);
+                app.briefShow({
+                    title: "Info",
+                    content: data.response.reason
+                });
             }
         }
     });
@@ -1462,17 +1548,19 @@ App.prototype.updateProduct = function () {
         load: true,
         success: function (data) {
             if (data.response.data === "SUCCESS") {
-                app.showMessage(app.context.product_updated);
+                app.briefShow({
+                    title: "Info",
+                    content: app.context.product_updated
+                });
                 $("#product_parent").val("");
                 $("#product_parent").removeAttr("current-item");
             }
             else if (data.response.data === "FAIL") {
-                app.showMessage(data.response.reason);
+                app.briefShow({
+                    title: "Info",
+                    content: data.response.reason
+                });
             }
-        },
-        error: function () {
-            //do something fun
-            app.showMessage(app.context.error_message);
         }
     });
 };
@@ -1575,87 +1663,46 @@ App.prototype.stockLow = function (handler) {
 };
 
 
-App.prototype.undoSale = function (prodId, prodQty,transId) {
-    var html = "<input type='text' class='form-control' id='undo_sale_narr' placeholder='Reason for Reversal'>";
-    var m = app.ui.modal(html, "Undo Transaction", {
+App.prototype.undoSale = function (transId) {
+    var ref = transId.substring(0,4);
+    var html = "<span>This will undo all transactions with reference no. <b>"+ref+"</b></span><br><br>\n\
+                <input type='text' class='form-control' id='undo_sale_narr' placeholder='Reason for Reversal'>";
+    var m = app.ui.modal(html, "Reverse Transaction", {
         ok: function () {
             var narr = $("#undo_sale_narr").val();
-            var prodIds = [prodId];
-            var qtys = [prodQty];
             var request = {
-                product_ids: prodIds,
-                product_qtys: qtys,
                 tran_type: "1",
                 narration: narr,
                 tran_flag: "reversal_of_sale",
                 previous_trans_id : transId
             };
+            m.modal('hide');
+            $(".modal-backdrop").remove();
             //do some stuff like saving to the server
             app.xhr(request, app.dominant_privilege, "transact", {
                 load: true,
                 success: function (data) {
                     var resp = data.response.data;
-                    m.modal('hide');
-                    if (resp === "success") {
+                    if (resp.status === "success") {
                         //well transaction successful
-                        app.showMessage(app.context.reverse_success);
+                        app.briefShow({
+                            title : "Info",
+                            content : app.context.reverse_success
+                        });
                     }
-                    else if (resp === "fail") {
-                        app.showMessage(app.context.transact_fail);
+                    else if (resp.status === "fail") {
+                        app.briefShow({
+                            title: "Info",
+                            content: resp.reason
+                        });
                     }
-                },
-                error: function () {
-                    //do something 
-                    app.showMessage(app.context.error_message);
                 }
             });
-        },
-        cancel: function () {
-            //what to do?
         },
         okText: "Proceed",
         cancelText: "Cancel"
     });
 };
 
-
-App.prototype.addProductCategory = function(){
-   var cat = $("#product_categories").val();
-   var username = $("#email_address").val();
-   if(username === ""){
-       app.showMessage("Username is required");
-       return;
-   }
-   var request = {
-       category : cat,
-       username : username
-   };
-   app.xhr(request,app.dominant_privilege,"add_category",{
-       load : true,
-       success : function(resp){
-          var r = resp.response.data;
-          if(r === "success"){
-              app.showMessage("Category added successfully");
-          }
-          else if(r === "fail"){
-            app.showMessage(resp.response.reason);  
-          }
-       }
-   });
-};
-
-App.prototype.fetchProductCategory = function(){
-    var username = $("#email_address").val();
-    var request = {
-        username: username
-    };
-    app.xhr(request, app.dominant_privilege, "fetch_categories", {
-        load: false,
-        success: function (resp) {
-            var r = resp.response.data;
-            $("#product_categories_display").html(r.CATEGORY.toString());
-        }
-    }); 
-};
 
 //67407

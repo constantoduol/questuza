@@ -91,7 +91,6 @@ body {
 
 .error {
     color : red;
-    margin: 5px;
 }
 
 #error_space_login {
@@ -298,17 +297,20 @@ form {
 }
 
 .category_touch {
-  line-height: 3.5;
+  line-height: 2.5;
   padding-left: 30px;
   padding-right: 30px;
   border-radius: 0px;
   margin: 10px;
   display : block;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 
 .card_touch {
-    border: 1px solid rgb(173, 216, 230);
+  border-bottom: 1px solid rgb(173, 216, 230);
   padding: 5px;
   border-radius: 0px;
   background: rgb(255, 255, 255);
@@ -341,6 +343,43 @@ form {
     -webkit-user-select: none;
 }
 
+.table-condensed>tbody>tr>td, 
+.table-condensed>tbody>tr>th, 
+.table-condensed>tfoot>tr>td, 
+.table-condensed>tfoot>tr>th, 
+.table-condensed>thead>tr>td, 
+.table-condensed>thead>tr>th{
+    color : black;
+}
+
+.table-condensed>thead>tr>th:hover{
+    background-color: rgb(29, 139, 232);
+    color:white;
+}
+
+
+th.tablesorter-headerAsc {
+    background-image: url(/img/asc.gif) !important;
+    background-color: rgb(29, 139, 232);
+    color : white !important;
+}
+
+th.tablesorter-headerDesc {
+    background-image: url(/img/desc.gif) !important;
+    background-color: rgb(29, 139, 232);
+    color : white !important;
+}
+
+th.tablesorter-header {
+    background-image: url(/img/bg.gif);	
+    cursor: pointer;
+    font-weight: bold;
+    background-repeat: no-repeat;
+    background-position: center right;
+    padding-left: 20px;
+    margin-left: -1px;
+}
+
 .change_touch {
   font-size: 24px;
   color : black;
@@ -354,11 +393,6 @@ form {
   margin-right: 20px;  
 }
 
-#product_categories_display{
-      padding: 10px;
-  border: 1px solid rgb(173, 216, 230);
-  margin-top: 10px;
-}
 
 .modal-content {
     border-radius: 0px;
@@ -389,3 +423,12 @@ form {
   border-bottom-left-radius: 5px;
   border: 1px solid rgb(29, 139, 232);
 }
+
+#item_code {
+  height: 70px;
+  width: 10%;
+  font-size: 30px;
+  border-top-left-radius: 5px;
+  border-bottom-left-radius: 5px;
+}
+

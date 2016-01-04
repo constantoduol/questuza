@@ -1,3 +1,5 @@
+App.prototype.keyPadField = "";
+
 App.prototype.formatMoney = function (num) {
     num = parseFloat(num.toString().replace(",", ""));
     var p = num.toFixed(2).split(".");
@@ -15,7 +17,13 @@ App.prototype.formatMoney = function (num) {
     return newstr + "." + p[1];
 };
 
-App.prototype.keyPad = function (id, display) {
+App.prototype.setupKeyPadField = function(field){
+    $("#"+field).focus(function(){
+        app.keyPadField = field;
+    });
+};
+
+App.prototype.keyPad = function (id) {
     //initialize a keypad on a specific element
     //load the keypad here
     //display is an id of an input text
@@ -31,16 +39,16 @@ App.prototype.keyPad = function (id, display) {
                 key.click(function () {
                     if (keyVal.indexOf("back.png") > -1) {
                         //implement a backspace
-                        var currVal = $("#" + display).val(); //09932
+                        var currVal = $("#" + app.keyPadField).val(); //09932
                         var newVal = currVal.substring(0, currVal.length - 1);
-                        $("#" + display).val(newVal);
+                        $("#" + app.keyPadField).val(newVal);
                     }
                     else if (keyVal.indexOf("cancel.png") > -1) {
                         //clear everything
-                        $("#" + display).val("");
+                        $("#" + app.keyPadField).val("");
                     }
                     else {
-                        app.keyPadType(keyVal, display);
+                        app.keyPadType(keyVal, app.keyPadField);
                     }
 
                 });

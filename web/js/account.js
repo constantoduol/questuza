@@ -25,27 +25,27 @@ App.prototype.logout = function () {
 };
 
 
-App.prototype.changePassword = function () {
+App.prototype.changePin = function () {
     app.context = app.appData.formData.change_pass;
     var data = app.getFormData(app.context);
     if (!data)
         return;
-    if (data.new_password.value !== data.confirm_password.value) {
+    if (data.new_pin.value !== data.confirm_new_pin.value) {
         //do something cool
         app.showMessage(app.context.passwords_not_match);
         return;
     }
-    var reg = /^(?=.*\d).{4,50}$/;
-    var valid = reg.test(data.confirm_password.value);
+    var reg = /^[0-9]/;
+    var valid = reg.test(data.confirm_new_pin.value);
     if (!valid) {
         app.showMessage(app.context.password_not_valid);
         return;
     }
     var requestData = {
         user_name: data.user_name.value,
-        old_password: data.old_password.value,
-        new_password: data.new_password.value,
-        confirm_password: data.confirm_password.value
+        old_password: data.old_pin.value,
+        new_password: data.new_pin.value,
+        confirm_password: data.confirm_new_pin.value
     };
     app.xhr(requestData, "open_data_service", "changepass", {
         load: true,
@@ -55,7 +55,10 @@ App.prototype.changePassword = function () {
                 window.location = "index.html";
             }
             else {
-                app.showMessage(app.context.messages["false"]);
+                app.briefShow({
+                    title : "Info",
+                    content : app.context.messages["false"]
+                });
             }
         }
     });
@@ -95,7 +98,10 @@ App.prototype.login = function () {
                         window.location = "change.html?user_name=" + data.username.value;
                     }
                     else {
-                        app.showMessage(app.context.messages[l]);
+                        app.briefShow({
+                            title: "Info",
+                            content: app.context.messages[l]
+                        });
                     }
                 }
             });
@@ -119,9 +125,11 @@ App.prototype.navigate = function (privileges, buss) {
                     <option value='seller'>Seller</option>\n\
                     <option value='admin'>Admin</option></select>";
 
-        app.ui.modal(html, "Select Role", {
+        var m = app.ui.modal(html, "Select Role", {
             ok: function () {
                 var role = $("#select_role").val();
+                m.modal('hide');
+                $(".modal-backdrop").remove();
                 if (role === "seller") {
                     app.navigateBusiness(buss,saleUrl);
                 }
@@ -167,7 +175,7 @@ App.prototype.navigateBusiness = function (buss, url) {
             options = options + option;
         }
         var html = "<select id='select_business_id'>" + options + "</select>";
-        app.ui.modal(html, "Select Business", {
+        var m = app.ui.modal(html, "Select Business", {
             ok: function () {
                 var businessId = $("#select_business_id").val();
                 var businessType = buss.business_types[buss.business_ids.indexOf(businessId)];
@@ -178,9 +186,6 @@ App.prototype.navigateBusiness = function (buss, url) {
                 localStorage.setItem("business_name", businessName);
                 localStorage.setItem("business_extra_data",busExtra);
                 window.location = url;
-            },
-            cancel: function () {
-
             },
             okText: "Proceed",
             cancelText: "Cancel"
@@ -193,4 +198,18 @@ App.prototype.navigateBusiness = function (buss, url) {
        window.location = url;
        
     }
+};
+
+App.prototype.appSettings = function(){
+    var m = app.ui.modal("","Settings",{
+        okText : "Save",
+        cancelText : "Cancel"
+    });
+    app.loadPage({
+        load_url: app.pages.app_settings,
+        load_area: "modal_content_area",
+        onload: function () {
+
+        }
+    });
 };

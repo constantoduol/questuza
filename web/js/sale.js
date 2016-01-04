@@ -1,32 +1,23 @@
-App.prototype.loadCategories = function(id,type,filter){
+App.prototype.loadCategories = function (id, type, filter) {
     //load categories from the server
     var request = {
-        category_type : type,
-        filter : filter, //product filter
-        username : localStorage.getItem("current_user")
+        category_type: type,
+        filter: filter //product filter
     };
-    app.xhr(request,""+app.dominant_privilege+","+app.dominant_privilege+"","product_categories,fetch_categories",{
-        load : false,
-        success : function(data){
+    app.xhr(request,app.dominant_privilege,"product_categories",{
+        load: false,
+        success: function (data) {
             //if the user is uncategorized or all show all the categories
-            var key = app.dominant_privilege+"_fetch_categories";
-            var key1 = app.dominant_privilege+"_product_categories";
-            var userCats = data.response[key].data.CATEGORY;
-            var allCats = data.response[key1].data;
+            var allCats = data.response.data;
             //display the categories
             var cats;
-            if(type === "category"){
-                if(userCats && userCats.length > 0 && userCats.indexOf("all") === -1){
-                   cats = userCats; 
-                }
-                else {
-                   cats = allCats["PRODUCT_CATEGORY"];
-                }
+            if (type === "category") {
+                cats = allCats["PRODUCT_CATEGORY"];
             }
             else {
                 cats = allCats["PRODUCT_SUB_CATEGORY"];
             }
-            app.loadCats(cats,6,id,type,filter);
+            app.loadCats(cats, 4, id, type, filter);
         }
     });
 };
@@ -35,12 +26,14 @@ App.prototype.loadCats = function (cats,max,displayArea,type,filter) {
     for (var x = 1; x < cats.length + 1; x++) {
         var name = cats[x - 1];
         var data = app.getRowAndCol(x - 1,max);
-        var width = (app.getDim()[0]/10);
-        var font_size = width/5;
+        var width = app.getDim()[0]/(max + 0.5);
+        var font_size = width/10;
         var heightCat = app.getDim()[1]*0.57;
-        var heightSale = app.getDim()[1]*0.3;
+        var heightSale = app.getDim()[1]*0.33;
+        
         $("#product_category_card").css("height",heightCat+"px");
         $("#current_sale_card").css("height",heightSale+"px");
+        
         var cont = {font_size : font_size,width : width,name : name,filter : filter, row : data[0], col : data[1] };
         var clickHandler = function(subCategory,category){
             //load the subcategories
@@ -70,7 +63,7 @@ App.prototype.addCategory = function (displayArea,max,cont,clickHandler){
      }
 
     var currentItem = $("<td>");
-    var contDiv = $("<div class='category_touch btn'>"+cont.name+"</div>");;
+    var contDiv = $("<div class='category_touch btn' style='width:"+cont.width+"px'>"+cont.name+"</div>");;
     contDiv.css("font-size",cont.font_size+"px");
     contDiv.click(function(){
         clickHandler(cont.name,cont.filter);
@@ -166,15 +159,17 @@ App.prototype.commitSale = function () {
     var qtysElems = $(".qtys");
     var prodIds = [];
     var qtys = [];
-    var discountedPrices = []; //this is here for the sake of discounts
+    var prices = []; //this is here for the sake of discounts
     for (var x = 0; x < qtysElems.length; x++) {
         var qtyElem = $(qtysElems[x]);
         var qtyElemId = qtyElem.attr("id");
         var prodId = qtyElemId.substring(4,qtyElemId.length);
         var qty = qtyElem.html().trim() === "" ? 0 : parseInt(qtyElem.html());
         var availStock = parseFloat($("#stock_" + prodId).html());
-        var dPrice = parseFloat($("#price_"+prodId).html().replace(",",""));
-        discountedPrices.push(dPrice);
+        var price = app.getSetting("allow_discounts") === "1" 
+            ?  $("#price_"+prodId).attr("real_price") 
+            : $("#price_"+prodId).html();
+        prices.push(parseFloat(price));
         var trackStock = !app.getSetting("track_stock") ? "1" : app.getSetting("track_stock"); 
         if (qty <= 0) {
             app.showMessage(app.context.invalid_qty);
@@ -194,7 +189,7 @@ App.prototype.commitSale = function () {
         }
 
     }
-
+    
     if (prodIds.length === 0) {
         app.showMessage(app.context.no_product_selected);
         return;
@@ -208,7 +203,7 @@ App.prototype.commitSale = function () {
                 tran_type: "0",
                 tran_flag: "sale_to_customer",
                 business_type: app.appData.formData.login.current_user.business_type,
-                discount_prices : discountedPrices //this is useful for a business having discounts
+                prices : prices //this is useful for a business having discounts
             };
             //do some stuff like saving to the server
             app.xhr(request, app.dominant_privilege, "transact", {
@@ -304,7 +299,7 @@ App.prototype.generateReceipt = function () {
 App.prototype.printReceipt = function (resp) {
     var serverTime = resp.server_time.replace("EAT",",");
     var win = document.getElementById("receipt_area").contentWindow;
-    win.document.getElementById("time_area").innerHTML = serverTime;
+    win.document.getElementById("time_area").innerHTML = serverTime + "<br>Ref : "+resp.reason.substring(0,4);
     win.focus();// focus on contentWindow is needed on some ie versions
     win.print();
 };
@@ -348,22 +343,26 @@ App.prototype.todaySales = function (username,category) {
                             var undos = [];
                             for (var index = 0; index < resp.TRAN_FLAG.length; index++) {
                                 var flag = resp.TRAN_FLAG[index];
-                                var undo = "<a href='#' onclick='app.undoSale(\"" + resp.PRODUCT_ID[index] + "\",\"" + resp.STOCK_QTY[index] + "\")' \n\
+                                var undo = "<a href='#' onclick='app.undoSale(\"" + resp.ID[index] + "\")' \n\
                         			title='Undo sale'>Undo Sale</a>";
-                                var color, span, qty, amount;
+                                var color, span,etype;
+                                var amount = parseFloat(resp.STOCK_COST_SP[index]);
+                                var qty = parseFloat(resp.STOCK_QTY[index]);
                                 if (flag === "sale_to_customer") {
                                     color = "red";
                                     span = "Sale To Customer";
+                                    etype = "Stock Decrease";
                                     app.getSetting("enable_undo_sales") === "1" ? undos.push(undo) : undos.push("");
-                                    qty = parseFloat(resp.STOCK_QTY[index]);
-                                    amount = parseFloat(resp.STOCK_COST_SP[index]);
+                                    totalQty = totalQty + qty;
+                                    totalAmount = totalAmount + amount;
                                 }
                                 else if (flag === "reversal_of_sale") {
-                                    color = "green";
+                                    color = "blue";
                                     span = "Customer Returned Stock ";
+                                    etype = "Stock Increase";
                                     undos.push("");
-                                    qty = -parseFloat(resp.STOCK_QTY[index]);
-                                    amount = -parseFloat(resp.STOCK_COST_SP[index]);
+                                    totalQty = totalQty - qty;
+                                    totalAmount = totalAmount - amount;
                                 }
                                 else {
                                     //this is a different flag e.g new_stock
@@ -379,33 +378,26 @@ App.prototype.todaySales = function (username,category) {
                                     continue;
                                 }
 
-                                resp.TRAN_TYPE[index] = "<span style='color : " + color + "'>" + span + "<span>";
+                                resp.TRAN_TYPE[index] = "<span style='color : " + color + "'>" + etype + "<span>";
                                 var time = new Date(resp.CREATED[index]).toLocaleTimeString();
                                 resp.CREATED[index] = time;
-                                resp.STOCK_COST_SP[index] = app.formatMoney(amount);
-                                resp.STOCK_QTY[index] = qty;
-                                totalQty = totalQty + qty;
-                                totalAmount = totalAmount + amount;
+                                resp.STOCK_COST_SP[index] = "<span style='color : " + color + "'>" + app.formatMoney(amount) + "<span>";
+                                resp.STOCK_QTY[index] = "<span style='color : " + color + "'>" + qty + "<span>";
                             }
-                            resp.STOCK_COST_SP.push("<b>" + app.formatMoney(totalAmount) + "</b>");
-                            resp.STOCK_QTY.push("<b>" + totalQty + "</b>");
-                            resp.PRODUCT_NAME.push("");
-                            resp.TRAN_TYPE.push("<b>Totals</b>");
-                            resp.NARRATION.push("");
-                            resp.CREATED.push("");
                             app.ui.table({
                                 id_to_append: "paginate_body",
-                                headers: ["Product Name", "Entry Type", "Sale Qty", "Amount Received", "Narration", "Entry Time", "Undo Sale", "Cash Received"],
-                                values: [resp.PRODUCT_NAME, resp.TRAN_TYPE, resp.STOCK_QTY, resp.STOCK_COST_SP, resp.NARRATION, resp.CREATED, undos, resp.ID],
+                                headers: ["Ref","Product Name", "Entry Type", "Sale Qty", "Amount Received", "Narration", "Entry Time", "Undo Sale", "Cash Received"],
+                                values: [resp.ID,resp.PRODUCT_NAME, resp.TRAN_TYPE, resp.STOCK_QTY, resp.STOCK_COST_SP, resp.NARRATION, resp.CREATED, undos, resp.ID],
                                 include_nums: true,
                                 style: "",
                                 mobile_collapse: true,
+                                sortable : true,
                                 summarize: {
-                                    cols: [4],
-                                    lengths: [80]
+                                    cols: [0,5],
+                                    lengths: [4,80]
                                 },
                                 transform: {
-                                    7: function (value, index) {
+                                    8: function (value, index) {
                                         if (app.dominant_privilege !== "pos_middle_service")
                                             return;
                                         var received = cashReceived.META_ID.indexOf(value) > -1 ? "Yes" : "No";
@@ -422,8 +414,15 @@ App.prototype.todaySales = function (username,category) {
                                         });
                                         return href;
                                     }
+                                },  
+                                onRender: function (tableId) {
+                                    $("#" + tableId).append(app.footerRow([
+                                        "","","", "Totals", totalQty,app.formatMoney(totalAmount),
+                                        "", "", "", ""
+                                    ], "font-weight:bold"));
                                 }
                             });
+                            $("#paginate_body").append(app.colorKey());
                         }
                     });
                 }
@@ -434,15 +433,15 @@ App.prototype.todaySales = function (username,category) {
 
 
 App.prototype.loadSaleSearch = function(){
-    var heightCat = app.getDim()[1] * 0.57;
-    var heightSale = app.getDim()[1] * 0.3;
-    $("#product_category_card").css("height", heightCat + "px");
+    var heightSale = app.getDim()[1] * 0.83;
+    $("#product_category_card").css("overflow", "inherit");
     $("#current_sale_card").css("height", heightSale + "px");
-    var html = "<div class='input-group' style='margin-top:20px'>" +
-            "<input type='text' class='form-control' id='item_code' placeholder='Code' style='height:70px;width:10%;font-size:30px'>"+
+    var html = "<div class='input-group' style='margin-top:5px'>" +
+            "<div id='error_space_sale' class='error' ></div>" +
+            "<input type='text' class='form-control' id='item_code' placeholder='Code'>"+
             "<input type='text' class='form-control' id='search_products' placeholder='Search Products' style='height:70px;width:90%;font-size:30px'>" +
             "<div class='input-group-addon search' id='search_link'>" +
-            "<img src='img/search.png' alt='Search Products' style='width:40px'> </div> </div>";
+            "<img src='img/search.png' alt='Search Products' style='width:40px'></div> </div>";
     $("#product_category_card").html(html);
     $("#search_link").click(function(){
         app.allProducts(app.pages.sale);
@@ -513,10 +512,11 @@ App.prototype.sale = function(options){
     
     function appendItem(){
         saleArea = $("#sale_summary");
+        var price = values[2][options.index];
         var prodSpan = "<span id='prod_" + currentId + "'>" + values[0][options.index] + "</span>";//product name
         var qtySpan = "<span id=qty_" + currentId + " class='qtys'>1</span>";//quantity
-        var priceSpan = "<span id=price_" + currentId + ">" + app.formatMoney(values[2][options.index]) + "</span>";//price
-        var subSpan = "<span id=sub_" + currentId + " class='subs'>" + app.formatMoney(values[2][options.index]) + "</span>";//subtotal
+        var priceSpan = "<span id=price_" + currentId + " real_price="+price+">" + app.formatMoney(price) + "</span>";//price
+        var subSpan = "<span id=sub_" + currentId + " class='subs'>" + app.formatMoney(price) + "</span>";//subtotal
         var img = $("<img src='img/cancel.png' style='height:30px;background:red'>"); //remove icon
         var edit = $("<img src='img/edit.png' style='height:30px;background:lightblue' prod_id="+currentId+">"); //edit icon
         var tr = $("<tr>");
@@ -543,7 +543,9 @@ App.prototype.sale = function(options){
                     var newPrice = parseFloat($("#discounted_price").val());
                     var currSubTotal = parseFloat($("#sub_"+prodId).html().replace(",",""));
                     var newSubtotal = currSubTotal - currPrice + newPrice;
-                    $("#price_"+prodId).html(app.formatMoney(newPrice/currQty));
+                    var discPrice = newPrice/currQty;
+                    $("#price_"+prodId).html(app.formatMoney(discPrice));
+                    $("#price_"+prodId).attr("real_price",discPrice);
                     $("#sub_"+prodId).html(app.formatMoney(newSubtotal));
                     app.calculateTotals();
                     m.modal('hide');

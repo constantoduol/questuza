@@ -38,6 +38,7 @@ AppData.prototype.onload = {
         app.pages.supplier_account = "/views/supplier_account.html";
         app.pages.settings = "/views/settings.html";
         app.pages.keypad = "/views/keypad.html";
+        app.pages.app_settings = "/views/app_settings.html";
 
         //setup the dominant privilege
         app.dominant_privilege = app.appData.formData.login.current_user.dominantPrivilege();
@@ -73,9 +74,18 @@ AppData.prototype.onload = {
                 load_url: app.pages.account,
                 load_area: "modal_content_area",
                 onload: function () {
-                    $("#sign_out_link").click(app.logout);
-                    $("#about_link").click(app.brand);
-                    $("#activate_link").click(app.activateProduct);
+                    $("#sign_out_link").click(function(){
+                        m.modal('hide');
+                        app.logout();
+                    });
+                    $("#about_link").click(function(){
+                        m.modal('hide');
+                        app.brand();
+                    });
+                    $("#activate_link").click(function(){
+                        m.modal('hide');
+                        app.activateProduct();
+                    });
                     $("#help_link").click(function () {
                         app.paginate({
                             title: "Help",
@@ -101,7 +111,8 @@ AppData.prototype.onload = {
         });
     },
     "/index.html": function () {
-        app.keyPad("keypad", "password");
+        app.keyPad("keypad");
+        app.setupKeyPadField("password");
         app.context = app.appData.formData.login;
         $("#password").val("");
         $("#password").focus();
@@ -290,19 +301,8 @@ AppData.prototype.onload = {
             app.generalUserRequest("enable_user");
         });
         $("#reset_user_btn").click(app.resetPassword);
-        $("#add_category_btn").click(app.addProductCategory);
         $("#search_link").click(app.allUsers);
         app.setUpAuto(app.context.user.fields.search_users);
-        app.xhr({category_type: "category"}, app.dominant_privilege, "product_categories", {
-            load: false,
-            success: function (resp) {
-                var r = resp.response.data.PRODUCT_CATEGORY;
-                $.each(r, function (index) {
-                    var cat = r[index];
-                    $("#product_categories").append($("<option value=" + cat + ">" + cat + "</option>"));
-                });
-            }
-        });
 
     },
     "/views/product.html": function () {
@@ -430,8 +430,12 @@ AppData.prototype.onload = {
         app.setUpAuto(app.context.expense.fields.expense_name);
     },
     "/change.html": function () {
+        app.keyPad("keypad");
+        app.setupKeyPadField("old_pin");
+        app.setupKeyPadField("new_pin");
+        app.setupKeyPadField("confirm_new_pin");
         $("#user_name").val(app.getUrlParameter("user_name"));
-        $("#old_password").val(app.getUrlParameter("pass_word"));
+        $("#old_pin").val(app.getUrlParameter("pass_word"));
     },
     "/views/stock_history.html": function () {
         app.sub_context = app.context.stock_history;
