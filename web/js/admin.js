@@ -76,28 +76,19 @@ App.prototype.saveSettings = function(){
 
 
 App.prototype.loadSettings = function () {
-    app.paginate({
-        title: "Settings",
-        save_state: true,
-        save_state_area: "content_area",
-        onload_handler: app.pages.business,
-        onload: function () {
-            $("#paginate_print").remove();
-            app.context.settings.fields =  app.settings;
-            var settingsArea = $("<div id='settings_area'>");
-            $("#paginate_body").append(settingsArea);
-            //render settings from app.settings
-            $.each(app.settings, function (setting) {
-                app.renderDom(app.settings[setting], settingsArea);
-            });
-            app.xhr({}, "open_data_service", "fetch_settings", {
-                load: false,
-                success: function (resp) {
-                    var r = resp.response.data;
-                    $.each(r.CONF_KEY, function (x) {
-                        $("#" + r.CONF_KEY[x]).val(r.CONF_VALUE[x]);
-                    });
-                }
+    app.context.settings.fields = app.settings;
+    var settingsArea = $("#settings_area");
+    //$("#paginate_body").append(settingsArea);
+    //render settings from app.settings
+    $.each(app.settings, function (setting) {
+        app.renderDom(app.settings[setting], settingsArea);
+    });
+    app.xhr({}, "open_data_service", "fetch_settings", {
+        load: false,
+        success: function (resp) {
+            var r = resp.response.data;
+            $.each(r.CONF_KEY, function (x) {
+                $("#" + r.CONF_KEY[x]).val(r.CONF_VALUE[x]);
             });
         }
     });
@@ -201,26 +192,20 @@ App.prototype.createUser = function () {
         priv = ["pos_sale_service"];
     }
     var pin = Math.floor(Math.random()*100000);
-    var password = interface === "touch" ? pin : "";
     var requestData = {
         name: data.email_address.value,
         host: app.appData.formData.login.current_user.host,
         group: role,
         privs: priv,
         real_name : data.real_name.value,
-        password : password,
+        password : pin,
         user_interface : "touch"
     };
     app.xhr(requestData, "open_data_service", "create_account", {
         load: true,
         success: function (data) {
             if (data.response.data === "success") {
-                if(interface === "touch"){
-                    alert("User created, PIN is : "+pin);
-                }
-                else {
-                    app.showMessage(app.context.create_user);
-                }
+                alert("User created, PIN is : "+pin);
             }
             else if (data.response.data === "fail") {
                 app.showMessage(data.response.reason);
@@ -264,17 +249,18 @@ App.prototype.resetPassword = function () {
 };
 
 App.prototype.allUsers = function () {
-    app.xhr({}, "user_service,pos_admin_service", "all_users,all_users", {
+    app.xhr({}, app.dominant_privilege, "all_users", {
         load: true,
         success: function (data) {
             var title = "All Users";
-            var names = data.response.pos_admin_service_all_users.data.USER_NAME;
-            var userData = data.response.user_service_all_users.data;
+            //var names = data.response.pos_admin_service_all_users.data.USER_NAME;
+            var userData = data.response.data;
+            var names = userData.USER_NAME;
             var privs = [];
             var created = [];
             $.each(names,function(index){
                 var name = names[index];
-                var x = userData.USER_NAME.indexOf(name);
+                var x = names.indexOf(name);
                 var priv;
                 if (userData.privileges[x].indexOf("pos_admin_service") > -1) {
                     priv = "Admin";
@@ -347,7 +333,7 @@ App.prototype.profitAndLoss = function () {
     var request = {
         start_date: data.start_date.value,
         end_date: data.end_date.value,
-        business_type : localStorage.getItem("business_type")
+        business_type : app.getSetting("business_type")
     };
     app.xhr(request, app.dominant_privilege, "profit_and_loss", {
         load: true,
@@ -568,7 +554,7 @@ App.prototype.supplierAccount = function(prodId,supId,name){
                 sp_per_unit : data.sp_per_unit.value,
                 supplier_id : supId,
                 product_id : prodId,
-                business_type : localStorage.getItem("business_type")
+                business_type : app.getSetting("business_type")
             };
             app.xhr(request,app.dominant_privilege,"supplier_account_transact",{
                 load : true,
@@ -590,7 +576,7 @@ App.prototype.supplierAccount = function(prodId,supId,name){
         load_area: "modal_content_area",
         onload : function(){
             $("#supplier_account_name").html(name);
-            if(localStorage.getItem("business_type") === "services"){
+            if(app.getSetting("business_type") === "services"){
                 $("#units_received").val("0");
                 $("#sp_per_unit").val("0");
                 $("#units_received").css("display","none");
@@ -659,7 +645,7 @@ App.prototype.gridEdit = function(ids,columns,headers,values){
                    old_value : oldValue,
                    new_value : newValue,
                    column : columns[col],
-                   business_type : localStorage.getItem("business_type")
+                   business_type : app.getSetting("business_type")
                };
                app.xhr(request,app.dominant_privilege,"save_grid_edit",{
                    load : false,
@@ -693,7 +679,7 @@ App.prototype.allProducts = function (handler) {
                 title: title,
                 onload_handler: handler,
                 onload: function () {
-                    var bType = app.appData.formData.login.current_user.business_type;
+                    var bType = app.getSetting("business_type");
                     var headers, values,columns;
                     $.each(r.PRODUCT_NAME, function (index) {
                         r.CREATED[index] = new Date(r.CREATED[index]).toLocaleDateString();
@@ -1032,261 +1018,329 @@ App.prototype.servicesStockHistory = function () {
     });
 };
 
+App.prototype.commissionHistory = function(){
+    app.reportHistory({
+        success: function (data) {
+            var resp = data.response.data;
+            app.paginate({
+                title: "Commissions",
+                save_state: true,
+                save_state_area: "content_area",
+                onload_handler: app.pages.stock_history,
+                onload: function () {
+                    var totalComm = 0, units = 0;
+                    $.each(resp.COMM_VALUE, function (x) {
+                        var type = resp.TRAN_TYPE[x];
+                        var color, narr;
+                        var comm = parseFloat(resp.COMM_VALUE[x]);
+                        var unit = parseFloat(resp.UNITS_SOLD[x]);
+
+                        if (type === "0") {
+                            narr = "Increase";
+                            color = "green";
+                            totalComm = totalComm + comm;
+                            units = units + unit;
+                        }
+                        else if (type === "1") {
+                            narr = "Decrease";
+                            color = "red";
+                            totalComm = totalComm - comm;
+                            units = units - unit;
+                        }
+                        resp.UNITS_SOLD[x] = "<span style='color:" + color + "'>" + unit + "</span>";
+                        resp.COMM_VALUE[x] = "<span style='color:" + color + "'>" + app.formatMoney(comm) + "</span>";
+                        resp.TRAN_TYPE[x] = "<span style='color:" + color + "'>" + narr + "</span>";
+                    });
+                    resp.PRODUCT_NAME.push("<b>Totals</b>");
+                    resp.UNITS_SOLD.push("<b>" + units + "</b>");
+                    resp.COMM_VALUE.push(app.formatMoney(totalComm));
+                    resp.USER_NAME.push("");
+                    resp.CREATED.push("");
+                    resp.TRAN_TYPE.push("");
+                    resp.ID.push("");
+                    app.ui.table({
+                        id_to_append: "paginate_body",
+                        headers: ["Ref", "Product Name", "Type", "Units Sold", "Commission", "User Name", "Date Entered"],
+                        values: [resp.ID, resp.PRODUCT_NAME, resp.TRAN_TYPE, resp.UNITS_SOLD, resp.COMM_VALUE, resp.USER_NAME, resp.CREATED],
+                        include_nums: true,
+                        style: "",
+                        mobile_collapse: true,
+                        summarize: {
+                            cols: [0],
+                            lengths: [4]
+                        },
+                        transform: {
+                            6: function (value, index) {
+                                if (index === (resp.PRODUCT_NAME.length - 1))
+                                    return "";
+                                return new Date(value).toLocaleString();
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    });
+};
+
+App.prototype.discountHistory = function () {
+    app.reportHistory({
+        success: function (data) {
+            var resp = data.response.data;
+            console.log(resp);
+            app.paginate({
+                title: "Discounts",
+                save_state: true,
+                save_state_area: "content_area",
+                onload_handler: app.pages.stock_history,
+                onload: function () {
+                    var totalDisc = 0, units = 0;
+                    $.each(resp.DISC_VALUE, function (x) {
+                        var type = resp.TRAN_TYPE[x];
+                        var color, narr;
+                        var disc = parseFloat(resp.DISC_VALUE[x]);
+                        var unit = parseFloat(resp.UNITS_SOLD[x]);
+
+                        if (type === "0") {
+                            narr = "Increase";
+                            color = "green";
+                            totalDisc = totalDisc + disc;
+                            units = units + unit;
+                        }
+                        else if (type === "1") {
+                            narr = "Decrease";
+                            color = "red";
+                            totalDisc = totalDisc - disc;
+                            units = units - unit;
+                        }
+                        resp.UNITS_SOLD[x] = "<span style='color:" + color + "'>" + unit + "</span>";
+                        resp.DISC_VALUE[x] = "<span style='color:" + color + "'>" + app.formatMoney(disc) + "</span>";
+                        resp.TRAN_TYPE[x] = "<span style='color:" + color + "'>" + narr + "</span>";
+                    });
+                    resp.PRODUCT_NAME.push("<b>Totals</b>");
+                    resp.UNITS_SOLD.push("<b>" + units + "</b>");
+                    resp.DISC_VALUE.push(app.formatMoney(totalDisc));
+                    resp.USER_NAME.push("");
+                    resp.CREATED.push("");
+                    resp.TRAN_TYPE.push("");
+                    resp.ID.push("");
+                    app.ui.table({
+                        id_to_append: "paginate_body",
+                        headers: ["Ref", "Product Name", "Type", "Units Sold", "Discount", "User Name", "Date Entered"],
+                        values: [resp.ID, resp.PRODUCT_NAME, resp.TRAN_TYPE, resp.UNITS_SOLD, resp.DISC_VALUE, resp.USER_NAME, resp.CREATED],
+                        include_nums: true,
+                        style: "",
+                        mobile_collapse: true,
+                        summarize: {
+                            cols: [0],
+                            lengths: [4]
+                        },
+                        transform: {
+                            6: function (value, index) {
+                                if (index === (resp.PRODUCT_NAME.length - 1))
+                                    return "";
+                                return new Date(value).toLocaleString();
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    });
+};
+
+App.prototype.taxHistory = function () {
+    app.reportHistory({
+        success: function (data) {
+            var resp = data.response.data;
+            app.paginate({
+                title: "Taxes",
+                save_state: true,
+                save_state_area: "content_area",
+                onload_handler: app.pages.stock_history,
+                onload: function () {
+                    var totalTax = 0, units = 0;
+                    $.each(resp.TAX_VALUE, function (x) {
+                        var type = resp.TRAN_TYPE[x];
+                        var color, narr;
+                        var tax = parseFloat(resp.TAX_VALUE[x]);
+                        var unit = parseFloat(resp.UNITS_SOLD[x]);
+
+                        if (type === "0") {
+                            narr = "Increase";
+                            color = "green";
+                            totalTax = totalTax + tax;
+                            units = units + unit;
+                        }
+                        else if (type === "1") {
+                            narr = "Decrease";
+                            color = "red";
+                            totalTax = totalTax - tax;
+                            units = units - unit;
+                        }
+                        resp.UNITS_SOLD[x] = "<span style='color:" + color + "'>" + unit + "</span>";
+                        resp.TAX_VALUE[x] = "<span style='color:" + color + "'>" + app.formatMoney(tax) + "</span>";
+                        resp.TRAN_TYPE[x] = "<span style='color:" + color + "'>" + narr + "</span>";
+                    });
+                    resp.PRODUCT_NAME.push("<b>Totals</b>");
+                    resp.UNITS_SOLD.push("<b>" + units + "</b>");
+                    resp.TAX_VALUE.push(app.formatMoney(totalTax));
+                    resp.USER_NAME.push("");
+                    resp.CREATED.push("");
+                    resp.TRAN_TYPE.push("");
+                    resp.ID.push("");
+                    app.ui.table({
+                        id_to_append: "paginate_body",
+                        headers: ["Ref", "Product Name", "Type", "Units Sold", "Tax", "User Name", "Date Entered"],
+                        values: [resp.ID, resp.PRODUCT_NAME, resp.TRAN_TYPE, resp.UNITS_SOLD, resp.TAX_VALUE, resp.USER_NAME, resp.CREATED],
+                        include_nums: true,
+                        style: "",
+                        mobile_collapse: true,
+                        summarize: {
+                            cols: [0],
+                            lengths: [4]
+                        },
+                        transform: {
+                            6: function (value, index) {
+                                if (index === (resp.PRODUCT_NAME.length - 1))
+                                    return "";
+                                return new Date(value).toLocaleString();
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    });
+};
+
+App.prototype.supplierHistory = function(){
+    app.reportHistory({
+        success: function (data) {
+            var r = data.response.data;
+            var totalAmount = 0;
+            var totalUnits = 0;
+            app.paginate({
+                title: "Suppliers",
+                save_state: true,
+                save_state_area: "content_area",
+                onload_handler: app.pages.stock_history,
+                onload: function () {
+                    app.ui.table({
+                        id_to_append: "paginate_body",
+                        headers: ["Supplier Name", "Product Name", "Product Units", "Amount", "Entry Type", "Payment Mode", "Narration", "Username", "Date"],
+                        values: [r.SUPPLIER_NAME, r.PRODUCT_NAME, r.UNITS, r.TRANS_AMOUNT, r.TRAN_TYPE, r.PAYMENT_MODE, r.NARRATION, r.USER_NAME, r.CREATED],
+                        include_nums: true,
+                        style: "",
+                        mobile_collapse: true,
+                        summarize: {
+                            cols: [6],
+                            lengths: [30]
+                        },
+                        transform: {
+                            2: function (value) {
+                                totalUnits = totalUnits + parseFloat(value);
+                                return value;
+                            },
+                            3: function (value) {
+                                totalAmount = totalAmount + parseFloat(value);
+                                return app.formatMoney(value);
+                            },
+                            4: function (value) {
+                                return value === "0" ? "<span style='color:green'>Stock Out</span>" : "<span style='color:red'>Stock In</span>";
+                            },
+                            8: function (value) {
+                                return new Date(value).toLocaleString();
+                            }
+                        },
+                        onRender: function (id) {
+                            //append amounts
+                            totalAmount = app.formatMoney(totalAmount);
+                            $("#" + id).append("<tr><td></td> <td></td> <td><b>Totals</b></td> <td><b>" + totalUnits + "</b></td> <td><b>" + totalAmount + "</b></td></tr>");
+                        }
+                    });
+
+                }
+            });
+        }
+    });
+};
+
+App.prototype.salesVolume = function(){
+    app.reportHistory({
+        success: function (data) {
+            var resp = data.response.data;
+            console.log(resp);
+            app.paginate({
+                title: "Sales Volume",
+                save_state: true,
+                save_state_area: "content_area",
+                onload_handler: app.pages.stock_history,
+                onload: function () {
+                    var totalUnits = 0;
+                    var totalCostBp = 0;
+                    var totalCostSp = 0;
+                    
+                    app.ui.table({
+                        id_to_append: "paginate_body",
+                        headers: [ "Product Name", "Total Units", "Value/BP", "Value/SP"],
+                        values: [ resp.names, resp.units, resp.cost_bp, resp.cost_sp],
+                        include_nums: true,
+                        style: "",
+                        mobile_collapse: true,
+                        sortable : true,
+                        transform: {
+                            1 : function (value) {
+                                totalUnits = totalUnits + parseFloat(value);
+                                return value;
+                            },
+                            2 : function (value) {
+                                totalCostBp = totalCostBp + parseFloat(value);
+                                return app.formatMoney(value);
+                            },
+                            3 : function (value) {
+                                totalCostSp = totalCostSp + parseFloat(value);
+                                return app.formatMoney(value);
+                            }
+                        },
+                        onRender: function (id) {
+                            $("#" + id).append(app.footerRow([
+                                "","Totals",
+                                app.formatMoney(totalUnits),
+                                app.formatMoney(totalCostBp),
+                                app.formatMoney(totalCostSp)
+                            ], "font-weight:bold"));
+                        }
+                    });
+                }
+            });
+        }
+    });
+};
 
 App.prototype.stockHistory = function () {
     var type = $("#report_type").val();
     if(type === "stock_history") {
         var trackStock = app.getSetting("track_stock");
-        trackStock = localStorage.getItem("business_type") === "goods" ? "1" : "0";
+        trackStock = app.getSetting("business_type") === "goods" ? "1" : "0";
         trackStock === "1" ? app.goodsStockHistory() : app.servicesStockHistory();
     }
     else if(type === "commission_history"){
-        app.reportHistory({
-            success : function(data){
-               var resp = data.response.data;
-                app.paginate({
-                    title: "Commissions",
-                    save_state: true,
-                    save_state_area: "content_area",
-                    onload_handler: app.pages.stock_history,
-                    onload: function () {
-                        var totalComm = 0, units = 0;
-                        $.each(resp.COMM_VALUE, function (x) {
-                            var type = resp.TRAN_TYPE[x];
-                            var color, narr;
-                            var comm = parseFloat(resp.COMM_VALUE[x]);
-                            var unit = parseFloat(resp.UNITS_SOLD[x]);
-
-                            if (type === "0") {
-                                narr = "Increase";
-                                color = "green";
-                                totalComm = totalComm + comm;
-                                units = units + unit;
-                            }
-                            else if (type === "1") {
-                                narr = "Decrease";
-                                color = "red";
-                                totalComm = totalComm - comm;
-                                units = units - unit;
-                            }
-                            resp.UNITS_SOLD[x] = "<span style='color:" + color + "'>" + unit + "</span>";
-                            resp.COMM_VALUE[x] = "<span style='color:" + color + "'>" + app.formatMoney(comm) + "</span>";
-                            resp.TRAN_TYPE[x] = "<span style='color:" + color + "'>" + narr + "</span>";
-                        });
-                        resp.PRODUCT_NAME.push("<b>Totals</b>");
-                        resp.UNITS_SOLD.push("<b>"+units+"</b>");
-                        resp.COMM_VALUE.push(app.formatMoney(totalComm));
-                        resp.USER_NAME.push("");
-                        resp.CREATED.push("");
-                        resp.TRAN_TYPE.push("");
-                        resp.ID.push("");
-                        app.ui.table({
-                            id_to_append : "paginate_body",
-                            headers : ["Ref","Product Name","Type","Units Sold", "Commission","User Name", "Date Entered"],
-                            values : [resp.ID,resp.PRODUCT_NAME,resp.TRAN_TYPE,resp.UNITS_SOLD,resp.COMM_VALUE,resp.USER_NAME, resp.CREATED],
-                            include_nums : true,
-                            style : "",
-                            mobile_collapse : true,
-                            summarize: {
-                                cols: [0],
-                                lengths: [4]
-                            },
-                            transform : {
-                                6 : function(value,index){
-                                    if(index === (resp.PRODUCT_NAME.length - 1))
-                                        return "";
-                                    return new Date(value).toLocaleString();
-                                }
-                            }
-                        });
-                     }
-                });
-            }
-        });
+        app.commissionHistory();
     }
     else if (type === "discount_history") {
-        app.reportHistory({
-            success: function (data) {
-                var resp = data.response.data;
-                console.log(resp);
-                app.paginate({
-                    title: "Discounts",
-                    save_state: true,
-                    save_state_area: "content_area",
-                    onload_handler: app.pages.stock_history,
-                    onload: function () {
-                        var totalDisc = 0, units = 0;
-                        $.each(resp.DISC_VALUE, function (x) {
-                            var type = resp.TRAN_TYPE[x];
-                            var color,narr;
-                            var disc = parseFloat(resp.DISC_VALUE[x]);
-                            var unit = parseFloat(resp.UNITS_SOLD[x]);
-
-                            if (type === "0") {
-                                narr = "Increase";
-                                color = "green";
-                                totalDisc = totalDisc + disc;
-                                units = units + unit;
-                            }
-                            else if (type === "1") {
-                                narr = "Decrease";
-                                color = "red";
-                                totalDisc = totalDisc - disc;
-                                units = units - unit;
-                            }
-                            resp.UNITS_SOLD[x] = "<span style='color:" + color + "'>" + unit + "</span>";
-                            resp.DISC_VALUE[x] = "<span style='color:" + color + "'>" + app.formatMoney(disc) + "</span>";
-                            resp.TRAN_TYPE[x] = "<span style='color:" + color + "'>" + narr + "</span>";
-                        });
-                        resp.PRODUCT_NAME.push("<b>Totals</b>");
-                        resp.UNITS_SOLD.push("<b>" + units + "</b>");
-                        resp.DISC_VALUE.push(app.formatMoney(totalDisc));
-                        resp.USER_NAME.push("");
-                        resp.CREATED.push("");
-                        resp.TRAN_TYPE.push("");
-                        resp.ID.push("");
-                        app.ui.table({
-                            id_to_append: "paginate_body",
-                            headers: ["Ref","Product Name", "Type", "Units Sold", "Discount", "User Name", "Date Entered"],
-                            values: [resp.ID,resp.PRODUCT_NAME,resp.TRAN_TYPE, resp.UNITS_SOLD, resp.DISC_VALUE, resp.USER_NAME, resp.CREATED],
-                            include_nums: true,
-                            style: "",
-                            mobile_collapse: true,
-                            summarize: {
-                                cols: [0],
-                                lengths: [4]
-                            },
-                            transform: {
-                                6: function (value, index) {
-                                    if (index === (resp.PRODUCT_NAME.length - 1))
-                                        return "";
-                                    return new Date(value).toLocaleString();
-                                }
-                            }
-                        });
-                    }
-                });
-            }
-        });
+        app.discountHistory();
     }
     else if(type === "tax_history"){
-        app.reportHistory({
-            success : function(data){
-                var resp = data.response.data;
-                app.paginate({
-                    title: "Taxes",
-                    save_state: true,
-                    save_state_area: "content_area",
-                    onload_handler: app.pages.stock_history,
-                    onload: function () {
-                        var totalTax = 0, units = 0;
-                        $.each(resp.TAX_VALUE, function (x) {
-                            var type = resp.TRAN_TYPE[x];
-                            var color, narr;
-                            var tax = parseFloat(resp.TAX_VALUE[x]);
-                            var unit = parseFloat(resp.UNITS_SOLD[x]);
-
-                            if (type === "0") {
-                                narr = "Increase";
-                                color = "green";
-                                totalTax = totalTax + tax;
-                                units = units + unit;
-                            }
-                            else if (type === "1") {
-                                narr = "Decrease";
-                                color = "red";
-                                totalTax = totalTax - tax;
-                                units = units - unit;
-                            }
-                            resp.UNITS_SOLD[x] = "<span style='color:" + color + "'>" + unit + "</span>";
-                            resp.TAX_VALUE[x] = "<span style='color:" + color + "'>" + app.formatMoney(tax) + "</span>";
-                            resp.TRAN_TYPE[x] = "<span style='color:" + color + "'>" + narr + "</span>";
-                        });
-                        resp.PRODUCT_NAME.push("<b>Totals</b>");
-                        resp.UNITS_SOLD.push("<b>"+units+"</b>");
-                        resp.TAX_VALUE.push(app.formatMoney(totalTax));
-                        resp.USER_NAME.push("");
-                        resp.CREATED.push("");
-                        resp.TRAN_TYPE.push("");
-                        resp.ID.push("");
-                        app.ui.table({
-                            id_to_append : "paginate_body",
-                            headers : ["Ref","Product Name","Type","Units Sold", "Tax","User Name", "Date Entered"],
-                            values : [resp.ID,resp.PRODUCT_NAME,resp.TRAN_TYPE,resp.UNITS_SOLD, resp.TAX_VALUE,resp.USER_NAME, resp.CREATED],
-                            include_nums : true,
-                            style : "",
-                            mobile_collapse : true,
-                            summarize: {
-                                cols: [0],
-                                lengths: [4]
-                            },
-                            transform : {
-                                6 : function(value,index){
-                                    if(index === (resp.PRODUCT_NAME.length - 1))
-                                        return "";
-                                    return new Date(value).toLocaleString();
-                                }
-                            }
-                        });
-                    }
-                });
-            }
-        });
+        app.taxHistory();
     }
     else if(type === "supplier_history"){
-      app.reportHistory({
-            success : function(data){
-                console.log(data);
-                var r = data.response.data;
-                var totalAmount = 0;
-                var totalUnits = 0;
-                app.paginate({
-                    title: "Suppliers",
-                    save_state: true,
-                    save_state_area: "content_area",
-                    onload_handler: app.pages.stock_history,
-                    onload: function () {
-                        app.ui.table({
-                            id_to_append: "paginate_body",
-                            headers: ["Supplier Name", "Product Name","Product Units", "Amount","Entry Type","Payment Mode","Narration","Username","Date"],
-                            values: [r.SUPPLIER_NAME, r.PRODUCT_NAME,r.UNITS, r.TRANS_AMOUNT,r.TRAN_TYPE,r.PAYMENT_MODE,r.NARRATION,r.USER_NAME,r.CREATED],
-                            include_nums: true,
-                            style: "",
-                            mobile_collapse: true,
-                            summarize : {
-                                cols : [6],
-                                lengths : [30]
-                            },
-                            transform : {
-                                2 : function(value){
-                                    totalUnits = totalUnits + parseFloat(value);  
-                                    return value;
-                                },
-                                3 : function(value){
-                                    totalAmount = totalAmount + parseFloat(value);
-                                    return app.formatMoney(value);
-                                },
-                                4 : function(value){
-                                    return value === "0" ? "<span style='color:green'>Stock Out</span>" : "<span style='color:red'>Stock In</span>";
-                                },
-                                8 : function(value){
-                                    return new Date(value).toLocaleString();
-                                }
-                            },
-                            onRender : function(id){
-                               //append amounts
-                               totalAmount = app.formatMoney(totalAmount);
-                               $("#"+id).append("<tr><td></td> <td></td> <td><b>Totals</b></td> <td><b>"+totalUnits+"</b></td> <td><b>"+totalAmount+"</b></td></tr>");
-                            }
-                        }); 
-
-                    }
-                });
-            }
-        });  
+        app.supplierHistory();
+    }
+    else if(type === "sales_volume"){
+        app.salesVolume();
     }
 };
-
 
 
 
@@ -1368,7 +1422,7 @@ App.prototype.supplierAction = function(actionType){
 };
 
 App.prototype.createProduct = function () {
-    var type = app.appData.formData.login.current_user.business_type;
+    var type = app.getSetting("business_type");
     var context = type === "goods" ? app.context.product : app.context.service_product;
     var data = app.getFormData(context);
     if (!data) return;
@@ -1422,7 +1476,7 @@ App.prototype.createProduct = function () {
         product_parent : $("#product_parent").attr("current-item"),
         tax : data.tax.value,
         commission : data.commission.value,
-        business_type: app.appData.formData.login.current_user.business_type
+        business_type: app.getSetting("business_type")
     };
     
     app.xhr(requestData, app.dominant_privilege, "create_product", {
@@ -1485,7 +1539,7 @@ App.prototype.updateProduct = function () {
         return;
     }
     
-    var type = app.appData.formData.login.current_user.business_type;
+    var type = app.getSetting("business_type");
     var context = type === "goods" ? app.context.product : app.context.service_product;
     var data = app.getFormData(context);
     if (!data) return;
@@ -1541,7 +1595,7 @@ App.prototype.updateProduct = function () {
             product_parent : $("#product_parent").attr("current-item"),
             tax : data.tax.value,
             commission : data.commission.value,
-            business_type: app.appData.formData.login.current_user.business_type
+            business_type: app.getSetting("business_type")
     };
 
     app.xhr(requestData, app.dominant_privilege, "update_product", {
@@ -1560,50 +1614,6 @@ App.prototype.updateProduct = function () {
                     title: "Info",
                     content: data.response.reason
                 });
-            }
-        }
-    });
-};
-
-App.prototype.saveBusiness = function (actionType) {
-    var data = app.getFormData(app.context.business);
-    if (!data)
-        return;
-    if (actionType === "create") {
-        var conf = confirm(app.context.business_create_confirm);
-        if (!conf) return;
-    }
-    else if (actionType === "delete") {
-        var conf1 = confirm(app.context.business_delete_confirm);
-        if (!conf1) return;
-    }
-   
-    var request = {
-        action_type: actionType,
-        business_name: data.business_name.value,
-        country: data.country.value,
-        city: data.city.value,
-        postal_address: data.postal_address.value,
-        phone_number: data.phone_number.value,
-        company_website: data.company_website.value,
-        business_type: data.business_type.value,
-        business_owner: app.appData.formData.login.current_user.name,
-        business_extra_data : data.business_extra_data.value
-    };
-    var svc = actionType === "delete" ? "open_data_service,pos_admin_service" : "open_data_service";
-    var msg = actionType === "delete" ? "save_business,delete_business" : "save_business";
-    app.xhr(request, svc, msg, {
-        load: true,
-        success: function (data) {
-            var resp = actionType === "delete" ? data.response.open_data_service_save_business.data : data.response.data;
-            var reason = actionType === "delete" ? data.response.open_data_service_save_business.reason : data.response.reason;
-            if (resp === "success") {
-                app.showMessage(app.context.action_success);
-                alert("Business settings changed, please sign in again");
-                app.logout();
-            }
-            else if (resp === "fail") {
-                app.showMessage(app.context.action_failed + " : " + reason);
             }
         }
     });
@@ -1704,5 +1714,197 @@ App.prototype.undoSale = function (transId) {
     });
 };
 
+App.prototype.graphData = function(){
+    var data = app.getFormData(app.context.graphs);
+    if (!data) return;
+    var start = data.start_date.value;
+    var end = data.end_date.value;
+    $("#cache_area").html(""); //clear the cache
+    var categoryElems = $(".category-type");
+    var prodElems = $(".product-search");
+    var categories = [];
+    var products = [];
+    for(var x = 0; x < categoryElems.length; x++){
+        var cat = $(categoryElems[x]).val();
+        var prodElem = $(prodElems[x]); 
+        var prodId = prodElem.val().trim() === "" ? "all" : prodElem.attr("current-item");
+        if(categories.indexOf(cat) === -1){
+            categories.push(cat);
+            products.push(prodId);   
+        }
+    }
+    var request = {
+        begin_date : start,
+        end_date : end,
+        prod_ids : products,
+        categories : categories
+    };
+    app.xhr(request, app.dominant_privilege, "graph_data", {
+        load: true,
+        success: function (data) {
+            console.log(data);
+            var r = data.response.data;
+            $("#graph_area").html("");
+            Morris.Line({
+                element: 'graph_area',
+                parseTime: true,
+                data: r, 
+                xkey: "date", 
+                ykeys: categories, 
+                labels: categories
+            });
+        }
+    });
+};
+
+App.prototype.yAxisData = function(){
+    var html = "<input type='button' class='btn' value='Add Data' onclick='app.addyAxisData()'>\n\
+                <div id='data_area'></div><div style='display : none' id='cache_area'></div>";
+    var m = app.ui.modal(html,"Y axis data",{
+        ok : function(){
+            app.graphData();
+            m.modal('hide');
+        },
+        okText : "Plot Graph",
+        cancelText : "Cancel"
+    });
+    $("#cache_area").load("templates/y_data.html");
+};
+
+App.prototype.addyAxisData = function(){
+    var id = "search_"+app.rand(6);
+    var elems = $(".product-search");
+    elems[elems.length - 1].setAttribute("id",id);
+    $("#data_area").append($("#cache_area").html());
+    var autoTemplate = $.extend(true, {}, app.context.graphs.fields.search_products);
+    autoTemplate.autocomplete.id = id;
+    autoTemplate.autocomplete.where = function(){
+        return "PRODUCT_NAME  LIKE '" + $("#"+id).val() + "%'";
+    };
+    app.context.graphs.fields[id] = autoTemplate;
+    app.setUpAuto(app.context.graphs.fields[id]);
+};
+
+App.prototype.max = function(values){
+    var currMax = 0;
+    $.each(values,function(x){
+        if(values[x] > currMax) currMax = values[x];
+    });
+    return currMax;
+};
+
+App.prototype.showGlance = function(){
+    var headers = ["Sales","Cost of Goods","Margin","Taxes",
+        "Discounts","Expenses","Incomes","Best selling product","Top earning product"];
+    var categories = ["sales", "cost of goods", "margin",
+        "taxes", "discounts", "commissions", "incomes", "expenses"];
+    var request1 = {
+        prod_ids: ["all", "all", "all", "all", "all", "all", "all", "all"],
+        categories: categories,
+        begin_date: app.getDate(-7) + " 00:00:00",
+        end_date: app.getDate(0) + " 23:59:59",
+    };
+
+    app.xhr(request1, app.dominant_privilege, "graph_data", {
+        load: true,
+        success: function (data1) {
+            var request2 = {
+                id: "all",
+                user_name: "all",
+                report_type: "sales_volume",
+                begin_date: app.getDate(-1) + " 00:00:00",
+                end_date: app.getDate(-1) + " 23:59:59"
+            };
+            app.xhr(request2, app.dominant_privilege, "stock_history", {
+                load: true,
+                success: function (data2) {
+                    var request3 = {
+                        id: "all",
+                        user_name: "all",
+                        report_type: "sales_volume",
+                        begin_date: app.getDate() + " 00:00:00",
+                        end_date: app.getDate() + " 23:59:59"
+                    };
+                    app.xhr(request3, app.dominant_privilege, "stock_history", {
+                        load: true,
+                        success: function (data3) {
+                            var r1 = data1.response.data;
+                            var r1Copy = $.extend(true, [], r1);
+                            var r2 = data2.response.data;
+                            var r3 = data3.response.data;
+                            var todayDate = app.getDate();
+                            var yesterDate = app.getDate(-1);
+                            var today, yester, lastWeek = {};
+                            $.each(r1, function (x) {
+                                if (r1[x].date === todayDate) {
+                                    today = r1[x];
+                                    delete r1[x];
+                                }
+                                else if (r1[x].date === yesterDate) {
+                                    yester = r1[x];
+                                    delete r1[x];
+                                }
+                            });
+                            $.each(r1, function (x) {
+                                if (r1[x]) {
+                                    if (r1[x].sales)
+                                        lastWeek.sales = lastWeek.sales + r1[x].sales;
+                                    if (r1[x]["cost of goods"])
+                                        lastWeek["cost of goods"] = lastWeek["cost of goods"] + r1[x]["cost of goods"];
+                                    if (r1[x].margin)
+                                        lastWeek.margin = lastWeek.margin + r1[x].margin;
+                                    if (r1[x].taxes)
+                                        lastWeek.taxes = lastWeek.taxes + r1[x].taxes;
+                                    if (r1[x].discounts)
+                                        lastWeek.discounts = lastWeek.discounts + r1[x].discounts;
+                                    if (r1[x].expenses)
+                                        lastWeek.expenses = lastWeek.expenses + r1[x].expenses;
+                                    if (r1[x].incomes)
+                                        lastWeek.incomes = lastWeek.incomes + r1[x].incomes;
+                                }
+                            });
+                            var bestSellYester = r2.names[r2.units.indexOf(app.max(r2.units))];
+                            var topEarnerYester = r2.names[r2.cost_sp.indexOf(app.max(r2.cost_sp))];
+                            var bestSellToday = r3.names[r3.units.indexOf(app.max(r3.units))];
+                            var topEarnerToday = r3.names[r3.cost_sp.indexOf(app.max(r3.cost_sp))];
+                            var yesterValues = !yester ? [] : [yester.sales, yester["cost of goods"],
+                                yester.margin, yester.taxes, yester.discounts, yester.expenses, yester.incomes, bestSellYester, topEarnerYester];
+                            var todayValues = !today ? [] : [today.sales, today["cost of goods"],
+                                today.margin, today.taxes, today.discounts, today.expenses, today.incomes,bestSellToday,topEarnerToday];
+                            var lastWeekValues = !lastWeek ? [] : [lastWeek.sales, lastWeek["cost of goods"],
+                                lastWeek.margin, lastWeek.taxes, lastWeek.discounts, lastWeek.expenses, lastWeek.incomes];
+                            console.log(r1Copy)
+                            app.ui.table({
+                                id_to_append: "glance_area",
+                                headers: ["Category", "Today", "Yesterday","Last Week"],
+                                values: [headers, todayValues, yesterValues,lastWeekValues],
+                                include_nums: false,
+                                style: "",
+                                mobile_collapse: true,
+                                transform: {
+                                    1: function (value,index) {
+                                        if(index === 7 || index === 8) return value;
+                                        return !value ? 0 : app.formatMoney(value);
+                                    },
+                                    2: function (value,index) {
+                                        if(index === 7 || index === 8) return value;
+                                        return !value ? 0 : app.formatMoney(value);
+                                    }
+                                }
+                            });
+                            Morris.Line({
+                                element: 'graph_area',
+                                parseTime: true,
+                                data: r1Copy,
+                                xkey: "date",
+                                ykeys: categories,
+                                labels: categories
+                            });
+                        }});
+                }
+            });
+        }
+    });
+};
 
 //67407

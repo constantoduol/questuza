@@ -21,7 +21,7 @@ AppData.prototype.onload = {
             $("body").append(modalArea);
 
         //setup the pages
-        var bType = app.appData.formData.login.current_user.business_type;
+        var bType = app.getSetting("business_type");
         var prodPage = bType === "goods" ? "/views/product.html" : "/views/service_product.html";
         app.pages.products = prodPage;
         app.pages.users = "/views/user.html";
@@ -39,7 +39,8 @@ AppData.prototype.onload = {
         app.pages.settings = "/views/settings.html";
         app.pages.keypad = "/views/keypad.html";
         app.pages.app_settings = "/views/app_settings.html";
-
+        app.pages.graphs = "/views/graphs.html";
+        app.pages.glance = "/views/glance.html";
         //setup the dominant privilege
         app.dominant_privilege = app.appData.formData.login.current_user.dominantPrivilege();
     },
@@ -120,6 +121,7 @@ AppData.prototype.onload = {
             load: false,
             success: function (resp) {
                 var r = resp.response.data;
+                console.log(r);
                 localStorage.setItem("settings", JSON.stringify(r));
             }
         });
@@ -269,23 +271,11 @@ AppData.prototype.onload = {
 //    },
     "/admin.html": function () {
         app.context = app.appData.formData.admin;
-        app.loadPage({load_url: app.pages.products, load_area: "content_area"});
+        app.loadPage({load_url: app.pages.glance, load_area: "content_area"});
         $("#logo_cont_main").click(app.brand);
-        var bussId = localStorage.getItem("business_id");
-        if (!bussId) {
-            var m = app.ui.modal("Welcome, Please proceed to setup your business", "No Business Set", {
-                ok: function () {
-                    app.loadPage({load_url: app.pages.business, load_area: "content_area"});
-                    m.modal('hide');
-                },
-                cancel: function () {
-                    alert("No business set, signing out");
-                    app.logout();
-                },
-                okText: "Proceed",
-                cancelText: "Cancel"
-            });
-        }
+    },
+    "/views/glance.html" : function(){
+        app.showGlance();
     },
     "/views/user.html": function () {
         app.sub_context = app.context.user;
@@ -387,39 +377,7 @@ AppData.prototype.onload = {
     },
     "/views/business.html": function () {
         app.sub_context = app.context.business;
-        $("#save_business_btn").click(function () {
-            app.saveBusiness("create");
-        });
-        $("#update_business_btn").click(function () {
-            app.saveBusiness("update");
-        });
-        $("#delete_business_btn").click(function () {
-            app.saveBusiness("delete");
-        });
-
-        $("#settings_business_btn").click(app.loadSettings);
-
-        $("#country").html("");
-        $.each(app.nations, function (index) {
-            var nation = app.nations[index];
-            $("#country").append($("<option value=" + nation + ">" + nation + "</option>"));
-        });
-        //load all values for business
-        app.xhr({}, "open_data_service", "business_data", {
-            load: true,
-            success: function (data) {
-                var resp = data.response.data;
-                $("#business_name").val(resp.BUSINESS_NAME[0]);
-                $("#country").val(resp.COUNTRY[0]);
-                $("#city").val(resp.CITY[0]);
-                $("#postal_address").val(resp.POSTAL_ADDRESS[0]);
-                $("#phone_number").val(resp.PHONE_NUMBER[0]);
-                $("#company_website").val(resp.COMPANY_WEBSITE[0]);
-                $("#business_type").val(resp.BUSINESS_TYPE[0]);
-                $("#business_extra_data").val(resp.BUSINESS_EXTRA_DATA[0]);
-
-            }
-        });
+        app.loadSettings();
     },
     "/views/expenses.html": function () {
         app.sub_context = app.context.expense;
@@ -436,6 +394,11 @@ AppData.prototype.onload = {
         app.setupKeyPadField("confirm_new_pin");
         $("#user_name").val(app.getUrlParameter("user_name"));
         $("#old_pin").val(app.getUrlParameter("pass_word"));
+    },
+    "/views/graphs.html" : function(){
+        app.setUpDate("start_date"); //no limit
+        app.setUpDate("end_date"); //no limit
+        $("#y_btn").click(app.yAxisData);
     },
     "/views/stock_history.html": function () {
         app.sub_context = app.context.stock_history;
@@ -463,7 +426,7 @@ AppData.prototype.onload = {
         app.setUpDate("start_date"); //no limit
         app.setUpDate("end_date"); //no limit
         app.setUpAuto(app.context.stock_history.fields.search_products);
-        var bType = app.appData.formData.login.current_user.business_type;
+        var bType = app.getSetting("business_type");
         if (bType === "services") {
             $("#stock_low_btn").remove();
             $("#stock_expiry_btn").remove();

@@ -13,7 +13,6 @@ import com.quest.access.useraccess.services.annotations.WebService;
 import com.quest.servlets.ClientWorker;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -56,7 +55,6 @@ public class PosSaleService implements Serviceable {
         JSONObject requestData = worker.getRequestData();
         JSONArray ids = requestData.optJSONArray("product_ids");
         JSONArray qtys = requestData.optJSONArray("product_qtys");
-        String busId = requestData.optString("business_id");
         String bType = requestData.optString("business_type");
         String type = requestData.optString("tran_type");
         ArrayList<JSONObject> loadedProdData = new ArrayList();
@@ -65,7 +63,7 @@ public class PosSaleService implements Serviceable {
             //check if quantities are available and give an error if they
             //are not available
             String prodId = ids.optString(x);
-            JSONObject prodData = db.query("SELECT * FROM PRODUCT_DATA WHERE ID = ? AND BUSINESS_ID = ?", prodId, busId);
+            JSONObject prodData = db.query("SELECT * FROM PRODUCT_DATA WHERE ID = ?", prodId);
             loadedProdData.add(prodData);
             String parentProduct = prodData.optJSONArray("PRODUCT_PARENT").optString(0);
             Double noOfUnits = qtys.optDouble(x);
@@ -77,7 +75,7 @@ public class PosSaleService implements Serviceable {
                 productTotalqty = prodData.optJSONArray("PRODUCT_QTY").optDouble(0);
                 //no parent product
             } else {
-                JSONObject parentProdData = db.query("SELECT * FROM PRODUCT_DATA WHERE ID = ? AND BUSINESS_ID = ?", parentProduct, busId);
+                JSONObject parentProdData = db.query("SELECT * FROM PRODUCT_DATA WHERE ID = ?", parentProduct);
                 productTotalqty = parentProdData.optJSONArray("PRODUCT_QTY").optDouble(0);
             }
 
@@ -142,7 +140,6 @@ public class PosSaleService implements Serviceable {
         JSONArray qtys = requestData.optJSONArray("product_qtys");
         JSONArray prices = requestData.optJSONArray("prices");
         String narration = requestData.optString("narration");
-        String busId = requestData.optString("business_id");
         String tranFlag = requestData.optString("tran_flag");
         String type = requestData.optString("tran_type");
         String userName = worker.getSession().getAttribute("username").toString();
@@ -169,7 +166,7 @@ public class PosSaleService implements Serviceable {
                     productTotalqty = prodData.optJSONArray("PRODUCT_QTY").optDouble(0);
                     //no parent product
                 } else {
-                    JSONObject parentProdData = db.query("SELECT * FROM PRODUCT_DATA WHERE ID = ? AND BUSINESS_ID = ?", parentProduct, busId);
+                    JSONObject parentProdData = db.query("SELECT * FROM PRODUCT_DATA WHERE ID = ? ", parentProduct);
                     productTotalqty = parentProdData.optJSONArray("PRODUCT_QTY").optDouble(0);
                 }
 
@@ -182,34 +179,34 @@ public class PosSaleService implements Serviceable {
                 Double newQty = productTotalqty - unitsSold;//reduce the quantity since customer is buying
                 narration = narration.equals("") ? "Sale to Customer" : narration;
 
-                db.doInsert("STOCK_DATA", new String[]{transId, busId, prodId, type, bPrice.toString(), sPrice.toString(),
+                db.doInsert("STOCK_DATA", new String[]{transId, prodId, type, bPrice.toString(), sPrice.toString(),
                     unitsSold.toString(), profit.toString(), tranFlag, narration, "!NOW()", userName});
 
                 if (tax > 0) {
                     Double taxValue = (tax / 100) * sPrice;
-                    db.doInsert("TAX_DATA", new String[]{transId, userName, busId, 
-                        prodId, taxValue.toString(), unitsSold.toString(), type, "!NOW()"});
+                    db.doInsert("TAX_DATA", new String[]{transId, userName,prodId, 
+                        taxValue.toString(), unitsSold.toString(), type, "!NOW()"});
                 }
 
                 if (comm > 0) { //track only if we have a value
                     Double commValue = comm * noOfUnits;
                     db.doInsert("COMMISSION_DATA", new String[]{transId, userName,
-                        busId, prodId, commValue.toString(), unitsSold.toString(), type, "!NOW()"});
+                         prodId, commValue.toString(), unitsSold.toString(), type, "!NOW()"});
                 }
 
                 Double discount = (realPrice - sp) * noOfUnits;
                 if (allowDisc && discount > 0) {
                     db.doInsert("DISCOUNT_DATA", new String[]{transId, userName, 
-                        busId, prodId, discount.toString(), unitsSold.toString(), type, "!NOW()"});
+                        prodId, discount.toString(), unitsSold.toString(), type, "!NOW()"});
                 }
 
                 if (parentProduct.isEmpty()) {
                     //no parent product 
                     db.execute("UPDATE PRODUCT_DATA SET PRODUCT_QTY='" + newQty + "'"
-                            + " WHERE ID='" + prodId + "' AND BUSINESS_ID = '" + busId + "'");
+                            + " WHERE ID='" + prodId + "'");
                 } else {
                     db.execute("UPDATE PRODUCT_DATA SET PRODUCT_QTY='" + newQty + "'"
-                            + " WHERE ID='" + parentProduct + "' AND BUSINESS_ID = '" + busId + "'");
+                            + " WHERE ID='" + parentProduct + "'");
                 }
 
             } catch (Exception ex) {
@@ -227,7 +224,6 @@ public class PosSaleService implements Serviceable {
         Database db = new Database(POS_DATA);
         JSONObject requestData = worker.getRequestData();
         String prevTransId = requestData.optString("previous_trans_id");
-        String busId = requestData.optString("business_id");
         String type = requestData.optString("tran_type");
         String narration = requestData.optString("narration");
         String tranFlag = requestData.optString("tran_flag");
@@ -254,7 +250,7 @@ public class PosSaleService implements Serviceable {
             String prodId = stockData.optJSONArray("PRODUCT_ID").optString(x);
             io.out("selling_price : "+sPrice);
             io.out("units_sold : "+unitsSold);
-            db.doInsert("STOCK_DATA", new String[]{newTransId, busId, prodId, type, bPrice.toString(), sPrice.toString(),
+            db.doInsert("STOCK_DATA", new String[]{newTransId, prodId, type, bPrice.toString(), sPrice.toString(),
                 unitsSold.toString(), profit.toString(), tranFlag, narration, "!NOW()", userName});
 
             JSONObject prodData = db.query("SELECT * FROM PRODUCT_DATA WHERE ID = ?", prodId);
@@ -273,10 +269,10 @@ public class PosSaleService implements Serviceable {
             if (parentProduct.isEmpty()) {
                 //no parent product 
                 db.execute("UPDATE PRODUCT_DATA SET PRODUCT_QTY='" + newQty + "'"
-                        + " WHERE ID='" + prodId + "' AND BUSINESS_ID = '" + busId + "'");
+                        + " WHERE ID='" + prodId + "'");
             } else {
                 db.execute("UPDATE PRODUCT_DATA SET PRODUCT_QTY='" + newQty + "'"
-                        + " WHERE ID='" + parentProduct + "' AND BUSINESS_ID = '" + busId + "'");
+                        + " WHERE ID='" + parentProduct + "'");
             }
 
             boolean hasTax = !taxData.optJSONArray("ID").optString(x, "_none_").equals("_none_");
@@ -286,19 +282,19 @@ public class PosSaleService implements Serviceable {
             if (hasTax) {
                 Double taxValue = taxData.optJSONArray("TAX_VALUE").optDouble(x);
                 db.doInsert("TAX_DATA", new String[]{newTransId, userName,
-                    busId, prodId, taxValue.toString(), unitsSold.toString(), type, "!NOW()"});
+                    prodId, taxValue.toString(), unitsSold.toString(), type, "!NOW()"});
             }
 
             if (hasComm) {
                 Double commValue = commData.optJSONArray("COMM_VALUE").optDouble(x);
                 db.doInsert("COMMISSION_DATA", new String[]{newTransId, userName,
-                    busId, prodId, commValue.toString(), unitsSold.toString(), type, "!NOW()"});
+                     prodId, commValue.toString(), unitsSold.toString(), type, "!NOW()"});
             }
 
             if (hasDisc) {
                 Double discValue = discData.optJSONArray("DISC_VALUE").optDouble(x);
                 db.doInsert("DISCOUNT_DATA", new String[]{newTransId, userName,
-                    busId, prodId, discValue.toString(), unitsSold.toString(), type, "!NOW()"});
+                    prodId, discValue.toString(), unitsSold.toString(), type, "!NOW()"});
             } 
         }
         

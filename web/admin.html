@@ -10,6 +10,7 @@
     <link href='css/bootstrap-theme.min.css' rel='stylesheet' type='text/css'>
     <link href='css/jquery-ui.css' rel='stylesheet' type='text/css'>
     <link href='css/handson.css' rel='stylesheet' type='text/css'>
+    <link href='css/morris.css' rel='stylesheet' type='text/css'>
     <link href='css/pos.css' rel='stylesheet' type='text/css'>
 
     <script type="text/javascript" src="js/jquery-1.11.2.min.js"></script>
@@ -29,6 +30,8 @@
     <script type="text/javascript" src="js/lookups.js"></script>
     <script type="text/javascript" src="js/settings.js"></script>
     <script type="text/javascript" src="js/printThis.js"></script>
+    <script type="text/javascript" src="js/raphael-min.js"></script>
+    <script type="text/javascript" src="js/morris.min.js"></script>
 </head>
 <body>
 
@@ -49,12 +52,14 @@
         </div>
         <div id="navbar" class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right">
+                <li><a href="#" onclick="app.loadPage({load_url: app.pages.glance,load_area : 'content_area'})">Glance</a></li>
                 <li><a href="#" onclick="app.loadPage({load_url: app.pages.products,load_area : 'content_area'})">Products</a></li>
                 <li><a href="#" onclick="app.loadPage({load_url: app.pages.users,load_area : 'content_area'})">Users</a></li>
-                <li><a href="#" onclick="app.loadPage({load_url: app.pages.business,load_area : 'content_area'})">Business</a></li>
                 <li><a href="#" onclick="app.loadPage({load_url: app.pages.suppliers,load_area : 'content_area'})">Suppliers</a></li>
                 <li><a href="#" onclick="app.loadPage({load_url: app.pages.expenses,load_area : 'content_area'})">Incomes & Expenses</a></li>
                 <li><a href="#" onclick="app.loadPage({load_url: app.pages.stock_history,load_area : 'content_area'})">Reports</a></li>
+                <li><a href="#" onclick="app.loadPage({load_url: app.pages.graphs,load_area : 'content_area'})">Graphs</a></li>
+                <li><a href="#" onclick="app.loadPage({load_url: app.pages.business,load_area : 'content_area'})">Settings</a></li>
                 <li><a href="#" id="logout_link">sign out</a></li>
             </ul>
         </div>

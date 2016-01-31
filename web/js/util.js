@@ -83,20 +83,21 @@ App.prototype.getDim = function () {
     return [screenWidth, screenHeight];
 };
 
-App.prototype.getDate = function () {
-    var d = new Date();
+App.prototype.getDate = function(offset){
+    offset = !offset ? 0 : offset;
+    var offsetMillis = offset * 24 * 60 * 60 * 1000;
+    var time = Date.now() + offsetMillis;
+    var d = new Date(time);
     var m = d.getMonth() + 1;
     var day = d.getDate();
     m = m < 10 ? "0" + m : m;
     day = day < 10 ? "0" + day : day;
     var y = d.getFullYear();
     return y + "-" + m + "-" + day;
+    
 };
 
-App.prototype.getBusinessExtra = function (index) {
-    var extra = localStorage.getItem("business_extra_data");
-    return extra.split("<separator>")[index];
-};
+
 
 
 App.prototype.fetchItemById = function (options) {

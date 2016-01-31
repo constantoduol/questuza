@@ -4,7 +4,25 @@
  * and open the template in the editor.
  */
 
-App.prototype.settings = {  
+App.prototype.settings = {
+    business_name : {
+        type: "text",
+        id: "business_name",
+        required: true,
+        value: "",
+        label: "Business Name",
+        "class": "form-control" 
+    },
+    business_type : {
+        type: "select",
+        id: "business_type",
+        option_names: ["Goods", "Services"],
+        option_values: ["goods", "services"],
+        required: true,
+        selected: "1",
+        "class": "form-control",
+        label: "Business Type"
+    },
     enable_undo_sales: {
         type : "select",
         id : "enable_undo_sales",
@@ -12,6 +30,7 @@ App.prototype.settings = {
         option_values : ["1","0"],
         required : true,
         selected : "1",
+        "class" : "form-control",
         label : "Enable reverse sales for sales persons"
     },
     add_tax: {
@@ -21,6 +40,7 @@ App.prototype.settings = {
         option_values: ["1", "0"],
         required : true,
         selected : "1",
+         "class" : "form-control",
         label : "Add tax as an expense to profit and loss"
     },
     add_comm: {
@@ -30,6 +50,7 @@ App.prototype.settings = {
         option_values: ["1", "0"],
         required : true,
         selected : "1",
+         "class" : "form-control",
         label : "Add commission as an expense to profit and loss"
     },
     add_purchases: {
@@ -39,6 +60,7 @@ App.prototype.settings = {
         option_values: ["1", "0"],
         required : true,
         selected : "1",
+         "class" : "form-control",
         label : "Add purchases from suppliers to profit and loss"
     },
     allow_discounts: {
@@ -48,6 +70,7 @@ App.prototype.settings = {
         option_values: ["1", "0"],
         required : true,
         selected : "1",
+         "class" : "form-control",
         label : "Allow discounts?"
     },
     add_discounts: {
@@ -57,6 +80,7 @@ App.prototype.settings = {
         option_values: ["1", "0"],
         required : true,
         selected : "1",
+         "class" : "form-control",
         label : "Add discounts as an expense to profit and loss"
     },
     currency: {
@@ -65,6 +89,7 @@ App.prototype.settings = {
         option_names: ["KES", "USD"],
         option_values: ["KES", "USD"],
         required: true,
+         "class" : "form-control",
         selected: "KES",
         label: "Currency"
     },
@@ -75,6 +100,7 @@ App.prototype.settings = {
         option_values: ["1", "0"],
         required : true,
         selected : "1",
+         "class" : "form-control",
         label : "Track stock movement"
     },
     user_interface: {
@@ -84,7 +110,17 @@ App.prototype.settings = {
         option_values: ["touch", "desktop"],
         required : true,
         selected : "touch",
+         "class" : "form-control",
         label : "User Interface"
+    },
+    date_format: {
+        type: "select",
+        id: "date_format",
+        option_names: ["dd/mm/yyyy","yyyy/mm/dd","mm/dd/yyyy"],
+        option_values: ["dd/mm/yyyy","yyyy/mm/dd","mm/dd/yyyy"],
+        required: true,
+        "class": "form-control",
+        label: "Date Format"
     },
     no_of_receipts: {
         type : "number",

@@ -2,7 +2,7 @@
     <h3>Products</h3>
     <div class="input-group">
         <input type="text" class="form-control" id="search_products" placeholder="Search Products" style="width: 80%">
-        <select id="product_categories" style="width: 20%"></select>
+        <select id="product_categories" style="width: 20%" class="form-control"></select>
         <div class="input-group-addon search" id="search_link">
             <img src="img/search.png" alt="Search Products" > 
         </div>
@@ -16,8 +16,8 @@
 
         <label for="product_quantity_div">Quantity</label>
         <div id="product_quantity_div" style="display:flex">
-            <input type='text' id="current_product_quantity" class="info_badge" style="width: 10%" value='0.0' disabled/>
-            <select id="product_quantity_type" style="width:20%;margin-right: 10px">
+            <input type='text' id="current_product_quantity" class="info_badge" style="width: 10%;font-size: 18px" value='0.0' disabled/>
+            <select id="product_quantity_type" style="width:20%;margin-right: 10px" class="form-control">
                 <option value="increase">Increase By</option>
                 <option value="decrease">Decrease By</option>
             </select>
@@ -40,7 +40,7 @@
         <input type="number" class="form-control" id="product_reminder_limit" placeholder="Product Reminder Limit">
 
         <label for="product_expiry_date">Product Expiry Date</label>
-        <input type="date" class="form-control" id="product_expiry_date" placeholder="Product Expiry Date" readonly="readonly">
+        <input type="date" class="form-control" id="product_expiry_date"  readonly="readonly">
         
         <label for="product_narration">Product Narration</label>
         <input type="text" class="form-control" id="product_narration" placeholder="Product Narration">

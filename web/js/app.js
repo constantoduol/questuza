@@ -27,7 +27,6 @@ App.prototype.xhr = function (data, svc, msg, func) {
     request.request_header.request_svc = svc;
     request.request_header.request_msg = msg;
     request.request_header.session_id = localStorage.getItem("session_id");
-    data.business_id = app.appData.formData.login.current_user.business_id;
     request.request_object = data;
     if (func.load) {
         var loadArea = $("#" + app.context.load_area);
@@ -230,7 +229,7 @@ App.prototype.paginate = function (options) {
                         $("#paginate_card").css("width", "100%");
                         $("#paginate_card").css("border", "0px");
                         var currTitle = $("#paginate_title").html();
-                        var newTitle = localStorage.getItem("business_name") + "<br/><br/>" + currTitle;
+                        var newTitle = app.getSetting("business_name") + "<br/><br/>" + currTitle;
                         $("#paginate_title").html(newTitle);
                         if (options.beforePrint) {
                             options.beforePrint();
@@ -379,6 +378,30 @@ App.prototype.getSetting = function(name){
     else {
         return "0";
     }
+};
+
+App.prototype.rand = function (len) {
+    var buffer = "";
+    var count = 0;
+    function getRandomDigit() {
+        return Math.floor(10 * Math.random());
+    }
+    function getRandomLetter() {
+        var random = Math.floor(25 * Math.random()) + 97;
+        return String.fromCharCode(random);
+    }
+    while (count < len) {
+        var decision = getRandomDigit();
+        if (decision > 5) {
+            buffer += getRandomDigit();
+            count++;
+        }
+        else {
+            buffer += getRandomLetter();
+            count++;
+        }
+    }
+    return buffer.toString();
 };
 
 

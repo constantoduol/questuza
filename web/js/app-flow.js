@@ -13,8 +13,6 @@ AppData.prototype.formData = {
         current_user: {
             name: localStorage.getItem("current_user"),
             host: localStorage.getItem("host"),
-            business_id: localStorage.getItem("business_id"),
-            business_type: localStorage.getItem("business_type"),
             dominantPrivilege: function () {
                 var privs = localStorage.getItem("privileges");
                 if (privs && privs.indexOf("pos_admin_service") > -1) {
@@ -75,8 +73,7 @@ AppData.prototype.formData = {
                         table: "PRODUCT_DATA",
                         column: "*",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_NAME  LIKE '" + $("#search_products").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_NAME  LIKE '" + $("#search_products").val() + "%'";
                         },
                         orderby: "PRODUCT_NAME ASC",
                         limit: 10,
@@ -117,11 +114,10 @@ AppData.prototype.formData = {
                     autocomplete: {
                         id: "search_users",
                         database: "user_server",
-                        table: "BUSINESS_USERS",
-                        column: "USER_NAME,ID",
+                        table: "USERS",
+                        column: "USER_NAME,USER_ID",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
-                            return "USER_NAME  LIKE '" + $("#search_users").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "USER_NAME  LIKE '" + $("#search_users").val() + "%'";
                         },
                         orderby: "USER_NAME ASC",
                         limit: 10,
@@ -140,8 +136,11 @@ AppData.prototype.formData = {
                                     if (privs.indexOf("pos_admin_service") > -1) {
                                         $("#user_role").val("admin");
                                     }
-                                    else {
+                                    else if(privs.indexOf("pos_sale_service") > -1){
                                         $("#user_role").val("seller");
+                                    }
+                                    else if (privs.indexOf("pos_middle_service") > -1) {
+                                        $("#user_role").val("intermediate");
                                     }
                                 }
                             });
@@ -163,8 +162,7 @@ AppData.prototype.formData = {
                         table: "PRODUCT_DATA",
                         column: "*",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_NAME  LIKE '" + $("#search_products").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_NAME  LIKE '" + $("#search_products").val() + "%'";
                         },
                         orderby: "PRODUCT_NAME ASC",
                         limit: 10,
@@ -200,8 +198,7 @@ AppData.prototype.formData = {
                         table: "PRODUCT_DATA",
                         column: "PRODUCT_CATEGORY",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_CATEGORY  LIKE '" + $("#product_category").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_CATEGORY  LIKE '" + $("#product_category").val() + "%'";
                         },
                         orderby: "PRODUCT_CATEGORY ASC",
                         limit: 10,
@@ -217,8 +214,7 @@ AppData.prototype.formData = {
                         table: "PRODUCT_DATA",
                         column: "PRODUCT_SUB_CATEGORY",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_SUB_CATEGORY  LIKE '" + $("#product_sub_category").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_SUB_CATEGORY  LIKE '" + $("#product_sub_category").val() + "%'";
                         },
                         orderby: "PRODUCT_SUB_CATEGORY ASC",
                         limit: 10,
@@ -234,8 +230,7 @@ AppData.prototype.formData = {
                         table: "PRODUCT_DATA",
                         column: "*",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_NAME  LIKE '" + $("#product_parent").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_NAME  LIKE '" + $("#product_parent").val() + "%'";
                         },
                         orderby: "PRODUCT_NAME ASC",
                         limit: 10,
@@ -264,8 +259,7 @@ AppData.prototype.formData = {
                         table: "PRODUCT_DATA",
                         column: "*",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_NAME  LIKE '" + $("#search_products").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_NAME  LIKE '" + $("#search_products").val() + "%'";
                         },
                         orderby: "PRODUCT_NAME ASC",
                         limit: 10,
@@ -300,8 +294,7 @@ AppData.prototype.formData = {
                                 table: "PRODUCT_DATA",
                                 column: "*",
                                 where: function () {
-                                    var id = app.appData.formData.login.current_user.business_id;
-                                    return "ID = '" + parentId + "' AND BUSINESS_ID = '" + id + "'";
+                                    return "ID = '" + parentId + "'";
                                 },
                                 success: function (data) {
                                     var r = data.response.data;
@@ -321,8 +314,7 @@ AppData.prototype.formData = {
                         table: "PRODUCT_DATA",
                         column: "PRODUCT_CATEGORY",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_CATEGORY  LIKE '" + $("#product_category").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_CATEGORY  LIKE '" + $("#product_category").val() + "%'";
                         },
                         orderby: "PRODUCT_CATEGORY ASC",
                         limit: 10,
@@ -338,8 +330,7 @@ AppData.prototype.formData = {
                         table: "PRODUCT_DATA",
                         column: "PRODUCT_SUB_CATEGORY",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_SUB_CATEGORY  LIKE '" + $("#product_sub_category").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_SUB_CATEGORY  LIKE '" + $("#product_sub_category").val() + "%'";
                         },
                         orderby: "PRODUCT_SUB_CATEGORY ASC",
                         limit: 10,
@@ -355,8 +346,7 @@ AppData.prototype.formData = {
                         table: "PRODUCT_DATA",
                         column: "*",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_NAME  LIKE '" + $("#product_parent").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_NAME  LIKE '" + $("#product_parent").val() + "%'";
                         },
                         orderby: "PRODUCT_NAME ASC",
                         limit: 10,
@@ -388,8 +378,7 @@ AppData.prototype.formData = {
                         table: "SUPPLIER_DATA",
                         column: "*",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
-                            return "SUPPLIER_NAME  LIKE '" + $("#search_suppliers").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "SUPPLIER_NAME  LIKE '" + $("#search_suppliers").val() + "%'";
                         },
                         orderby: "SUPPLIER_NAME ASC",
                         limit: 10,
@@ -455,8 +444,7 @@ AppData.prototype.formData = {
                         table: "PRODUCT_DATA",
                         column: "*",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
-                            return "PRODUCT_NAME  LIKE '" + $("#search_products").val() + "%' AND BUSINESS_ID = '" + id + "'";
+                            return "PRODUCT_NAME  LIKE '" + $("#search_products").val() + "%'";
                         },
                         orderby: "PRODUCT_NAME ASC",
                         limit: 10,
@@ -466,6 +454,28 @@ AppData.prototype.formData = {
                 }
             },
             help_url: "/help/stock_history.html"
+        },
+        graphs : {
+            fields : {
+                search_products : {
+                    required : false,
+                    autocomplete: {
+                        id: "search_products",
+                        database: "pos_data",
+                        table: "PRODUCT_DATA",
+                        column: "*",
+                        where: function () {
+                            return "PRODUCT_NAME  LIKE '" + $("#search_products").val() + "%'";
+                        },
+                        orderby: "PRODUCT_NAME ASC",
+                        limit: 10,
+                        key: "PRODUCT_NAME",
+                        data: {}
+                    }
+                },
+                start_date: {required: true, message: "The start date is required"},
+                end_date: {required: true, message: "The end date is required"}  
+            }
         },
         expense: {
             fields: {
@@ -479,9 +489,8 @@ AppData.prototype.formData = {
                         table: "EXPENSE_DATA",
                         column: "RESOURCE_NAME",
                         where: function () {
-                            var id = app.appData.formData.login.current_user.business_id;
                             return "RESOURCE_NAME  LIKE '" + $("#expense_name").val() + "%'" +
-                                    " AND BUSINESS_ID = '" + id + "' AND RESOURCE_TYPE='" + $("#resource_type").val() + "'";
+                                    " AND RESOURCE_TYPE='" + $("#resource_type").val() + "'";
                         },
                         orderby: "RESOURCE_NAME ASC",
                         limit: 10,
@@ -506,13 +515,7 @@ AppData.prototype.formData = {
         business: {
             fields: {
                 business_name: {required: true, message: "Business name is required"},
-                country: {required: true, message: "Country is required"},
-                city: {required: true, message: "City is required"},
-                postal_address: {required: false},
-                phone_number: {required: false},
-                company_website: {required: false},
-                business_type: {required: true, message: "Business type is required"},
-                business_extra_data: {required: false}
+                business_type: {required: true, message: "Business type is required"}
             },
             help_url: "/help/business.html"
         },
@@ -547,6 +550,7 @@ AppData.prototype.formData = {
         business_delete_confirm: "Delete business? You will lose all records for this business",
         business_deleted_success: "Business deleted successfully",
         resource_success: "{resource_type} was added successfully",
-        supplier_transact: "Transaction was successful"
+        supplier_transact: "Transaction was successful",
+        reverse_success: "Transaction reversed successfully"
     }
 };

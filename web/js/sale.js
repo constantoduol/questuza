@@ -149,7 +149,6 @@ App.prototype.calculateTotals = function(){
   $("#total_qty").html(totalQty);
   $("#total_amount").html(app.formatMoney(totalSub));
   app.generateReceipt();
-  
 };
 
 
@@ -169,7 +168,7 @@ App.prototype.commitSale = function () {
         var price = app.getSetting("allow_discounts") === "1" 
             ?  $("#price_"+prodId).attr("real_price") 
             : $("#price_"+prodId).html();
-        prices.push(parseFloat(price));
+        prices.push(parseFloat(price.replace(",","")));
         var trackStock = !app.getSetting("track_stock") ? "1" : app.getSetting("track_stock"); 
         if (qty <= 0) {
             app.showMessage(app.context.invalid_qty);
@@ -202,7 +201,7 @@ App.prototype.commitSale = function () {
                 product_qtys: qtys,
                 tran_type: "0",
                 tran_flag: "sale_to_customer",
-                business_type: app.appData.formData.login.current_user.business_type,
+                business_type: app.getSetting("business_type"),
                 prices : prices //this is useful for a business having discounts
             };
             //do some stuff like saving to the server
@@ -277,8 +276,8 @@ App.prototype.generateReceipt = function () {
     recValues[0].push("<b>Totals</b>");
     recValues[1].push("<b>" + totalQty + "</b>");
     recValues[2].push("<b>" + app.formatMoney(totalCost) + "</b>");
-    var bName = localStorage.getItem("business_name");
-    var header = "<div><h3>" + bName + "</h3></div>";
+    var bName = app.getSetting("business_name");
+    var header = "<div><h4>" + bName + "</h4></div>";
     var receiptHeader = !app.getSetting("receipt_header") ? "" : app.getSetting("receipt_header");
     header = header + receiptHeader;
     var receiptFooter = !app.getSetting("receipt_footer") ? "" : app.getSetting("receipt_footer");
@@ -374,6 +373,7 @@ App.prototype.todaySales = function (username,category) {
                                     resp.NARRATION.splice(index, 1);
                                     resp.CREATED.splice(index, 1);
                                     resp.TRAN_FLAG.splice(index, 1);
+                                    resp.ID.splice(index, 1);
                                     index--; //we do this to filter out stock increases from sales
                                     continue;
                                 }

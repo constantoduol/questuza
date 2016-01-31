@@ -8,40 +8,41 @@
     <hr/>
     <div class="form-group">
         <label for="report_type">Report Type</label>
-        <select id="report_type">
-            <option value="stock_history">Stock</option>
+        <select id="report_type" class="form-control">
+            <option value="stock_history">Stock Movement</option>
             <option value="commission_history">Commission</option>
             <option value="tax_history">Tax</option>
             <option value="supplier_history">Supplier</option>
             <option value="discount_history">Discounts</option>
+            <option value="sales_volume">Sales Volume</option>
         </select>
 
         <label for="stock_select_users">Username</label>
-        <select id="stock_select_users">
+        <select id="stock_select_users" class="form-control">
             <option value="all">All</option>
         </select>
         
         <label for="product_categories">Product Categories</label>
-        <select id="product_categories">
+        <select id="product_categories" class="form-control">
             <option value="all">All</option>
         </select>
         
         <div id="stock_select_suppliers_div" style="display: none">
         <label for='stock_select_suppliers'>Suppliers</label>
-        <select id='stock_select_suppliers'>
+        <select id='stock_select_suppliers' class="form-control">
             <option value='all'>All</option>
         </select>
         </div>
         <label for="start_date">Start Date</label>
         <div class="input-group" style="width: 100%">
-            <input type="date" class="form-control" id="start_date" placeholder="Start Date" readonly="readonly" style="width:80%">
-            <select id='start_time' style="width:20%"></select>
+            <input type="date" class="form-control" id="start_date" readonly="readonly" style="width:80%">
+            <select id='start_time' style="width:20%" class="form-control"></select>
         </div>
         
         <label for="end_date">End Date</label>
         <div class="input-group" style="width: 100%">
-            <input type="date" class="form-control" id="end_date" placeholder="End Date" readonly="readonly" style="width : 80%">
-            <select id='stop_time' style="width: 20%"></select>
+            <input type="date" class="form-control" id="end_date"  readonly="readonly" style="width : 80%">
+            <select id='stop_time' style="width: 20%" class="form-control"></select>
         </div>
     </div>
 
