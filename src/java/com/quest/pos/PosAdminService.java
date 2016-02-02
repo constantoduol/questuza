@@ -905,12 +905,12 @@ public class PosAdminService implements Serviceable {
     }
     
     
-    private String getTodayBeginDate(){
-        return getDate(0)+" 00:00:00";
+    private static String getTodayBeginDate(){
+        return getDate()+" 00:00:00";
     }
     
-    private String getTodayEndDate(){
-        return getDate(0)+" 23:59:59";
+    private  String getTodayEndDate(){
+        return getDate()+" 23:59:59";
     }
         
    
@@ -1349,22 +1349,19 @@ public class PosAdminService implements Serviceable {
         serv.messageToClient(worker);
     }
     
-    /**
-     * 
-     * @
-     * @param offset a signed integer value representing days offset from today
-     * @return the date in format yyyy-mm-dd
-     */
-    public static String getDate(int offset){
-        long offsetMillis = offset * 24 * 60 * 60 * 1000;
-        long time = System.currentTimeMillis() + offsetMillis;
+    private static String getDate() {
         Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(time);
-        return cal.get(Calendar.YEAR) +"-" +cal.get(Calendar.MONTH)+1 +"-" +cal.get(Calendar.DAY_OF_MONTH);
+        int year = cal.get(Calendar.YEAR);
+        Integer month = cal.get(Calendar.MONTH) + 1;
+        Integer day = cal.get(Calendar.DATE);
+        String themonth = month < 10 ? "0" + month : month.toString();
+        String theday = day < 10 ? "0" + day : day.toString();
+        return year + "-" + themonth + "-" + theday;
     }
     
     public static void main(String [] args){
-      
+        //2016-02-01
+        io.out(getTodayBeginDate());
     }
 
 }

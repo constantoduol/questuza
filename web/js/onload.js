@@ -180,7 +180,8 @@ AppData.prototype.onload = {
                             var key = app.dominant_privilege + "_all_users";
                             var key1 = app.dominant_privilege + "_product_categories";
                             var userResp = data.response[key].data;
-                            var catResp = data.response[key1].data.PRODUCT_CATEGORY;
+                            var catResp = data.response[key1].data.PRODUCT_CATEGORY.sort();
+                            userResp.USER_NAME.sort();
                             $.each(userResp.USER_NAME, function (index) {
                                 var name = userResp.USER_NAME[index];
                                 $("#user_select").append($("<option value=" + name + ">" + name + "</option>"));

@@ -211,6 +211,7 @@ public class PosSaleService implements Serviceable {
 
             } catch (Exception ex) {
                 Logger.getLogger(PosSaleService.class.getName()).log(Level.SEVERE, null, ex);
+                return new Object[]{Message.FAIL,ex.getMessage()};
             }
         }
         return new Object[]{Message.SUCCESS, transId};

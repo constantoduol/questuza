@@ -1834,20 +1834,26 @@ App.prototype.showGlance = function(){
                             var r3 = data3.response.data;
                             var todayDate = app.getDate();
                             var yesterDate = app.getDate(-1);
-                            var today, yester, lastWeek = {};
+                            var today, yester;
+                            var lastWeek = {};
                             $.each(r1, function (x) {
                                 if (r1[x].date === todayDate) {
                                     today = r1[x];
-                                    delete r1[x];
                                 }
                                 else if (r1[x].date === yesterDate) {
                                     yester = r1[x];
-                                    delete r1[x];
                                 }
                             });
+                            lastWeek.sales = 0;
+                            lastWeek["cost of goods"] = 0;
+                            lastWeek.margin = 0;
+                            lastWeek.taxes = 0;
+                            lastWeek.discounts = 0;
+                            lastWeek.expenses = 0;
+                            lastWeek.incomes = 0;
                             $.each(r1, function (x) {
                                 if (r1[x]) {
-                                    if (r1[x].sales)
+                                    if (r1[x].sales) 
                                         lastWeek.sales = lastWeek.sales + r1[x].sales;
                                     if (r1[x]["cost of goods"])
                                         lastWeek["cost of goods"] = lastWeek["cost of goods"] + r1[x]["cost of goods"];
@@ -1872,15 +1878,16 @@ App.prototype.showGlance = function(){
                             var todayValues = !today ? [] : [today.sales, today["cost of goods"],
                                 today.margin, today.taxes, today.discounts, today.expenses, today.incomes,bestSellToday,topEarnerToday];
                             var lastWeekValues = !lastWeek ? [] : [lastWeek.sales, lastWeek["cost of goods"],
-                                lastWeek.margin, lastWeek.taxes, lastWeek.discounts, lastWeek.expenses, lastWeek.incomes];
-                            console.log(r1Copy)
+                                lastWeek.margin, lastWeek.taxes, lastWeek.discounts, lastWeek.expenses, lastWeek.incomes,'',''];
+                            console.log(lastWeek);
+                            console.log(lastWeekValues);
                             app.ui.table({
                                 id_to_append: "glance_area",
-                                headers: ["Category", "Today", "Yesterday","Last Week"],
+                                headers: ["Category", "Today", "Yesterday","Last 7 days"],
                                 values: [headers, todayValues, yesterValues,lastWeekValues],
                                 include_nums: false,
                                 style: "",
-                                mobile_collapse: true,
+                                mobile_collapse: false,
                                 transform: {
                                     1: function (value,index) {
                                         if(index === 7 || index === 8) return value;
@@ -1888,6 +1895,11 @@ App.prototype.showGlance = function(){
                                     },
                                     2: function (value,index) {
                                         if(index === 7 || index === 8) return value;
+                                        return !value ? 0 : app.formatMoney(value);
+                                    },
+                                    3: function (value, index) {
+                                        if (index === 7 || index === 8)
+                                            return value;
                                         return !value ? 0 : app.formatMoney(value);
                                     }
                                 }
