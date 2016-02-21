@@ -117,14 +117,8 @@ AppData.prototype.onload = {
         app.context = app.appData.formData.login;
         $("#password").val("");
         $("#password").focus();
-        app.xhr({}, "open_data_service", "fetch_settings", {
-            load: false,
-            success: function (resp) {
-                var r = resp.response.data;
-                console.log(r);
-                localStorage.setItem("settings", JSON.stringify(r));
-            }
-        });
+        $("#settings_icon").click(app.appSettings);
+        app.fetchSettings();
     },
     "/": function () {
         this["/index.html"]();
@@ -302,6 +296,7 @@ AppData.prototype.onload = {
         $("#update_product_btn").click(app.updateProduct);
         $("#delete_product_btn").click(app.deleteProduct);
         $("#supplier_product_btn").click(app.supplierSelect);
+        $("#excel_upload").click(app.uploadProductExcel);
         $("#search_link").click(function () {
             app.allProducts(app.pages.products);
         });

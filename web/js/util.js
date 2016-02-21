@@ -177,3 +177,20 @@ App.prototype.newGrid = function (options) {
 
 };
 
+App.prototype.formatDate = function(date,noTime,longDate,timeOnly){
+    var format = app.getSetting('date_format');
+    if(noTime) date = date + " 00:00:00";
+    if(longDate) format = format + " HH:mm:ss";
+    if(timeOnly) format = "HH:mm:ss";
+    return DateFormat.format.date(date,format);
+};
+
+App.prototype.fetchSettings = function () {
+    app.xhr({}, "open_data_service", "fetch_settings", {
+        load: false,
+        success: function (resp) {
+            var r = resp.response.data;
+            localStorage.setItem("settings", JSON.stringify(r));
+        }
+    });
+};

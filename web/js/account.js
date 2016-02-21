@@ -151,13 +151,27 @@ App.prototype.navigate = function (privileges) {
 App.prototype.appSettings = function(){
     var m = app.ui.modal("","Settings",{
         okText : "Save",
-        cancelText : "Cancel"
+        cancelText : "Cancel",
+        ok : function(){
+            localStorage.setItem("operation_mode",$("#operation_mode").val());
+            localStorage.setItem("server_ip",$("#server_ip").val());
+            localStorage.setItem("available_printers",$("#available_printers").val());
+            localStorage.setItem("client_name",$("#client_name").val());
+            m.modal('hide');
+        }
     });
     app.loadPage({
         load_url: app.pages.app_settings,
         load_area: "modal_content_area",
         onload: function () {
-
+            var mode = localStorage.getItem("operation_mode");
+            var ip = localStorage.getItem("server_ip");
+            var printer = localStorage.getItem("available_printers");
+            var name = localStorage.getItem("client_name");
+            !mode ? null : $("#operation_mode").val(mode);
+            !ip ? null : $("#server_ip").val(ip);
+            !printer ? null : $("#available_printers").val(printer);
+            !name ? null : $("#client_name").val(name);
         }
     });
 };

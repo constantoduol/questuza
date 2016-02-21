@@ -23,10 +23,11 @@ App.prototype.isMobile = function(){
 
 App.prototype.xhr = function (data, svc, msg, func) {
     var request = {};
+    var sesId = localStorage.getItem("session_id");
     request.request_header = {};
     request.request_header.request_svc = svc;
     request.request_header.request_msg = msg;
-    request.request_header.session_id = localStorage.getItem("session_id");
+    request.request_header.session_id = sesId;
     request.request_object = data;
     if (func.load) {
         var loadArea = $("#" + app.context.load_area);
@@ -48,13 +49,13 @@ App.prototype.xhr = function (data, svc, msg, func) {
             return data;
         },
         success: function(data){
-            if(func.success) func.success(data);
+            if(func.success) func.success(data,request.request_object);
         },
         error: function(err){
             if (func.load) {
                 loadArea.html("");
             }
-            if(func.error) func.error(err);
+            if(func.error) func.error(err,request.request_object);
         }
     });
 };
@@ -363,6 +364,7 @@ App.prototype.defaultAutoHandler = function (autoHandler, data, index) {
     $.each(autoHandler.fields, function (id) {
         var key = autoHandler.fields[id];
         $("#" + id).val(data[key][index]);
+        $("#" + id).html(data[key][index]);
     });
     if(autoHandler.after){
         autoHandler.after(data, index);
@@ -371,9 +373,13 @@ App.prototype.defaultAutoHandler = function (autoHandler, data, index) {
 };
 
 App.prototype.getSetting = function(name){
-    var settings = JSON.parse(localStorage.getItem("settings"));
-    if(settings) {
-        return settings.CONF_VALUE[settings.CONF_KEY.indexOf(name)];
+    var settings = localStorage.getItem("settings");
+    if(settings && settings !== "undefined") {
+        settings = JSON.parse(settings);
+        if(settings.CONF_VALUE){
+            return settings.CONF_VALUE[settings.CONF_KEY.indexOf(name)];   
+        }
+        return "0";
     }
     else {
         return "0";

@@ -153,6 +153,7 @@ body {
     border-radius: 5px;
     background: white;
     font-size : 14px;
+    box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 1px 5px 0 rgba(0, 0, 0, 0.12);
 }
 
 .card .input-group img {
@@ -181,6 +182,7 @@ body {
 label {
     margin-top : 10px;
     margin-bottom : 10px;
+    color : black;
 }
 
 
@@ -430,8 +432,9 @@ th.tablesorter-header {
 }
 
 .small-group {
-    width : 25%;
-    margin-right: 10px;
+    width : 25% !important;
+    margin-right: 10px !important;
+    margin-top : 0px !important;
 }
 
 .large-group {
@@ -439,10 +442,11 @@ th.tablesorter-header {
     margin-right: 10px;
 }
 
-.input-group-addon {
+.form-group .input-group-addon {
     background-color: rgb(29, 139, 232);
     color: rgb(255, 255, 255);
     border: 0px;
+    width: 150px;
 }
 
 .form-control {
@@ -450,5 +454,26 @@ th.tablesorter-header {
     height: 40px;
 }
 
+ .label-group .input-group,
+ .card .input-group {
+    width: 100%;
+    margin-top : 20px;
+}
 
+.required {
+    border-right: 2px solid !important;
+    border-right-color: rgb(255, 0, 0) !important
+}
 
+.warning {
+    color: rgb(255, 255, 255);
+    background-color: rgba(255, 0, 0, 0.6);
+    padding: 5px;
+    border-radius: 5px;
+}
+
+#excel_upload {
+    width: 30px;
+    border-radius: 30px;
+    cursor: pointer;
+}

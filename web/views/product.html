@@ -9,53 +9,80 @@
     </div>
     
     <div id="error_space_admin" class="error" ></div>
+    <div >
+        <img src="img/excel.png" alt="Search Products" id='excel_upload' > 
+    </div>
     <hr/>
     <div class="form-group">
-        <label for="product_name">Product Name</label>
-        <input type="text" class="form-control" id="product_name" placeholder="Product Name">
 
-        <label for="product_quantity_div">Quantity</label>
-        <div id="product_quantity_div" style="display:flex">
-            <input type='text' id="current_product_quantity" class="info_badge" style="width: 10%;font-size: 18px" value='0.0' disabled/>
+        <div class="input-group">
+            <div class="input-group-addon required">Product Name</div>
+            <input type="text" class="form-control" id="product_name" placeholder="Product Name">   
+        </div>
+        
+        <div id="product_quantity_div" class="input-group">
+            <div class="input-group-addon required" id="current_product_quantity" style="font-size: 18px" title="Current Quantity">0.0</div>
             <select id="product_quantity_type" style="width:20%;margin-right: 10px" class="form-control">
                 <option value="increase">Increase By</option>
                 <option value="decrease">Decrease By</option>
             </select>
-            <input type="number"  id="product_quantity" placeholder="Quantity added/removed" value="0" style="width:70%" class="form-control">
+            <input type="number"  id="product_quantity" placeholder="Quantity added/removed" value="0" style="width:79%" class="form-control">
         </div>
-         <label for="product_category">Product Category</label>
-        <input type="text" class="form-control" id="product_category" placeholder="Product Category">
+        <div class="input-group">
+            <div class="input-group-addon required">Category</div>
+            <input type="text" class="form-control" id="product_category" placeholder="Product Category">   
+        </div>
         
-        <label for="product_sub_category">Product Sub Category</label>
-        <input type="text" class="form-control" id="product_sub_category" placeholder="Product Sub Category">
+        <div class="input-group">
+            <div class="input-group-addon required">Sub Category</div>
+             <input type="text" class="form-control" id="product_sub_category" placeholder="Product Sub Category">   
+        </div>
+        
+        <div class="input-group">
+            <div class="input-group-addon required">Buying Unit Cost</div>
+            <input type="number" class="form-control" id="product_bp_unit_cost" placeholder="Buying Unit Cost">
+        </div>
+        
+        <div class="input-group">
+            <div class="input-group-addon required">Selling Unit Cost</div>
+            <input type="number" class="form-control" id="product_sp_unit_cost" placeholder="Selling Unit Cost">
+        </div>
         
         
-        <label for="product_bp_unit_cost">Buying Unit Cost</label>
-        <input type="number" class="form-control" id="product_bp_unit_cost" placeholder="Buying Unit Cost">
-
-        <label for="product_sp_unit_cost">Selling Unit Cost</label>
-        <input type="number" class="form-control" id="product_sp_unit_cost" placeholder="Selling Unit Cost">
-
-        <label for="product_reminder_limit">Low Stock Reminder Limit</label>
-        <input type="number" class="form-control" id="product_reminder_limit" placeholder="Product Reminder Limit">
-
-        <label for="product_expiry_date">Product Expiry Date</label>
-        <input type="date" class="form-control" id="product_expiry_date"  readonly="readonly">
+        <div class="input-group">
+            <div class="input-group-addon">Low Stock Limit</div>
+            <input type="number" class="form-control" id="product_reminder_limit" placeholder="Product Reminder Limit"> 
+        </div>
         
-        <label for="product_narration">Product Narration</label>
-        <input type="text" class="form-control" id="product_narration" placeholder="Product Narration">
+        <div class="input-group">
+            <div class="input-group-addon">Expiry Date</div>
+            <input type="date" class="form-control" id="product_expiry_date"  readonly="readonly">
+        </div>
         
-        <label for="product_parent">Parent Product</label>
-        <input type="text" class="form-control" id="product_parent" placeholder="Parent Product">
+        <div class="input-group">
+            <div class="input-group-addon">Description</div>
+             <input type="text" class="form-control" id="product_narration" placeholder="Product Description"> 
+        </div>
         
-        <label for="max_discount">Maximum Discount</label>
-        <input type="number" class="form-control" id="max_discount" placeholder="Maximum Discount" value="0">
+        <div class="input-group">
+            <div class="input-group-addon">Parent Product</div>
+            <input type="text" class="form-control" id="product_parent" placeholder="Parent Product">
+        </div>
         
-        <label for="tax">Tax Percentage</label>
-        <input type="number" class="form-control" id="tax" placeholder="Tax Percentage" value="0">
-
-        <label for="commission">Commission</label>
-        <input type="number" class="form-control" id="commission" placeholder="Commission Value" value="0">
+        <div class="input-group">
+            <div class="input-group-addon">Maximum Discount</div>
+            <input type="number" class="form-control" id="max_discount" placeholder="Maximum Discount" value="0">
+        </div>
+        
+        <div class="input-group">
+            <div class="input-group-addon">Tax Percentage</div>
+            <input type="number" class="form-control" id="tax" placeholder="Tax Percentage" value="0">
+        </div>
+        
+        <div class="input-group">
+            <div class="input-group-addon">Commission</div>
+            <input type="number" class="form-control" id="commission" placeholder="Commission Value" value="0">
+        </div>
 
     </div>
 

@@ -266,7 +266,14 @@ public class PosAdminService implements Serviceable {
         String pProduct = requestData.optString("product_parent");
         String unitSize = requestData.optString("product_unit_size");
         String maxDiscount = requestData.optString("max_discount","0");
+        
+        maxDiscount = maxDiscount.isEmpty() ? "0" : maxDiscount;
+        productRlimit = productRlimit.isEmpty() ? "0" : productRlimit;
+        tax = tax.isEmpty() ? "0" : tax;
+        comm = comm.isEmpty() ? "0" : comm;
+        unitSize = unitSize.isEmpty() ? "1" : unitSize;
         productQty = pProduct.trim().length() > 0 ? "0" : productQty;
+        
         String userName = worker.getSession().getAttribute("username").toString();
         //check that we are not duplicating products
         boolean exists = db.ifValueExists(new String[]{productName}, "PRODUCT_DATA", new String[]{"PRODUCT_NAME"});
@@ -486,7 +493,14 @@ public class PosAdminService implements Serviceable {
         String pProduct = requestData.optString("product_parent");
         String unitSize = requestData.optString("product_unit_size");
         String maxDiscount = requestData.optString("max_discount","0");
+        
+        maxDiscount = maxDiscount.isEmpty() ? "0" : maxDiscount;
+        productRlimit = productRlimit.isEmpty() ? "0" : productRlimit;
+        tax = tax.isEmpty() ? "0" : tax;
+        comm = comm.isEmpty() ? "0" : comm;
+        unitSize = unitSize.isEmpty() ? "1" : unitSize;
         productQty = pProduct.trim().length() > 0 ? "0" : productQty;
+        productEdate = productEdate.isEmpty() ? "2099-01-01" : productEdate;
         String userName = worker.getSession().getAttribute("username").toString();
         //check whether the product exists
         boolean exists = db.ifValueExists(new String[]{productName}, "PRODUCT_DATA", new String[]{ "PRODUCT_NAME"});
@@ -513,6 +527,7 @@ public class PosAdminService implements Serviceable {
             } catch (Exception ex) {
                 Logger.getLogger(PosAdminService.class.getName()).log(Level.SEVERE, null, ex);
                 worker.setResponseData("FAIL");
+                worker.setReason(ex.getMessage());
                 serv.messageToClient(worker);
             }
         }
@@ -1361,7 +1376,10 @@ public class PosAdminService implements Serviceable {
     
     public static void main(String [] args){
         //2016-02-01
-        io.out(getTodayBeginDate());
+       Database db = new Database(POS_DATA);
+       Database.setDefaultConnection("root", "jdbc:mysql://127.0.0.1:3306/","pasnipop");
+       boolean ex = db.ifValueExists(new String[]{"Milk"}, "PRODUCT_DATA", new String[]{"PRODUCT_NAME"});
+       io.out(ex);
     }
 
 }

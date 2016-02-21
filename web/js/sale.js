@@ -222,11 +222,12 @@ App.prototype.commitSale = function () {
                         app.showMessage(app.context.transact_success);
                     }
                     else if (resp.status === "fail") {
-                        app.showMessage(app.context.transact_fail);
+                        app.showMessage(resp.reason);
                     }
                 }
             });
             m.modal('hide');
+            $(".modal-backdrop").remove();
         },
         cancel: function () {
             //do nothing
@@ -296,7 +297,7 @@ App.prototype.generateReceipt = function () {
 };
 
 App.prototype.printReceipt = function (resp) {
-    var serverTime = resp.server_time.replace("EAT",",");
+    var serverTime = app.formatDate(resp.server_time,false,true);
     var win = document.getElementById("receipt_area").contentWindow;
     win.document.getElementById("time_area").innerHTML = serverTime + "<br>Ref : "+resp.reason.substring(0,4);
     win.focus();// focus on contentWindow is needed on some ie versions
@@ -379,8 +380,7 @@ App.prototype.todaySales = function (username,category) {
                                 }
 
                                 resp.TRAN_TYPE[index] = "<span style='color : " + color + "'>" + etype + "<span>";
-                                var time = new Date(resp.CREATED[index]).toLocaleTimeString();
-                                resp.CREATED[index] = time;
+                                resp.CREATED[index] = app.formatDate(resp.CREATED[index],false,false,true);
                                 resp.STOCK_COST_SP[index] = "<span style='color : " + color + "'>" + app.formatMoney(amount) + "<span>";
                                 resp.STOCK_QTY[index] = "<span style='color : " + color + "'>" + qty + "<span>";
                             }
@@ -506,7 +506,6 @@ App.prototype.sale = function(options){
                    options.data.SP_UNIT_COST,
                    options.ids];
     }
-    console.log(productCache)
     var saleArea = $("#sale_summary");
     var currentId = options.ids[options.index];
     
@@ -549,6 +548,7 @@ App.prototype.sale = function(options){
                     $("#sub_"+prodId).html(app.formatMoney(newSubtotal));
                     app.calculateTotals();
                     m.modal('hide');
+                    $(".modal-backdrop").remove();
                 }
             });
             $("#discounted_price").keyup(function(){
@@ -683,6 +683,7 @@ App.prototype.quantityPicker = function (options) {
                 $("#search_products").focus();
             });
             m.modal('hide');
+            $(".modal-backdrop").remove();
         }
     });
 

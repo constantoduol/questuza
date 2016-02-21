@@ -57,6 +57,7 @@ public class PosSaleService implements Serviceable {
         JSONArray qtys = requestData.optJSONArray("product_qtys");
         String bType = requestData.optString("business_type");
         String type = requestData.optString("tran_type");
+        boolean trackStock = OpenDataService.getSetting("track_stock").equals("1");
         ArrayList<JSONObject> loadedProdData = new ArrayList();
 
         for (int x = 0; x < ids.length(); x++) {
@@ -79,22 +80,16 @@ public class PosSaleService implements Serviceable {
                 productTotalqty = parentProdData.optJSONArray("PRODUCT_QTY").optDouble(0);
             }
 
-            if (unitsSold > productTotalqty && type.equals("0") && bType.equals("goods")) {
-                try {
-                    //send an error message
-                    int prodIndex = prodData.optJSONArray("ID").toList().indexOf(prodId);
-                    String prodName = prodData.optJSONArray("PRODUCT_NAME").optString(prodIndex);
-                    JSONObject response = new JSONObject();
-                    response.put("status", Message.FAIL);
-                    response.put("reason", "Insufficient stock available for product '" + prodName + "' only " + productTotalqty + " available");
-                    worker.setResponseData(response);
-                    serv.messageToClient(worker);
-                    return new Object[]{Message.FAIL,loadedProdData}; //consider this for services where stock is tracked
-                    //not enough stock to process the sale
-                } catch (JSONException ex) {
-                    Logger.getLogger(PosSaleService.class.getName()).log(Level.SEVERE, null, ex);
-                    return null;
-                }
+            if (unitsSold > productTotalqty && type.equals("0") && trackStock) {
+                //send an error message
+                int prodIndex = prodData.optJSONArray("ID").toList().indexOf(prodId);
+                String prodName = prodData.optJSONArray("PRODUCT_NAME").optString(prodIndex);
+                    //JSONObject response = new JSONObject();
+                //response.put("status", Message.FAIL);
+                String reason = "Insufficient stock available for product '" + prodName + "' only " + productTotalqty + " available";
+                return new Object[]{Message.FAIL, reason}; //consider this for services where stock is tracked
+                //not enough stock to process the sale
+                
             }
         }
         return new Object[]{Message.SUCCESS,loadedProdData};
@@ -109,6 +104,8 @@ public class PosSaleService implements Serviceable {
             response.put("status", transData[0]);
             response.put("reason",transData[1]);
         }
+        io.out(transData[0]);
+        io.out(transData[1]);
         response.put("server_time", new Date());
         worker.setResponseData(response);
         serv.messageToClient(worker);
@@ -144,6 +141,7 @@ public class PosSaleService implements Serviceable {
         String type = requestData.optString("tran_type");
         String userName = worker.getSession().getAttribute("username").toString();
         boolean allowDisc = OpenDataService.getSetting("allow_discounts").equals("1");
+        boolean trackStock = OpenDataService.getSetting("track_stock").equals("1");
         String transId = new UniqueRandom(50).nextMixedRandom();
         for (int x = 0; x < ids.length(); x++) {
             try {
@@ -200,11 +198,11 @@ public class PosSaleService implements Serviceable {
                         prodId, discount.toString(), unitsSold.toString(), type, "!NOW()"});
                 }
 
-                if (parentProduct.isEmpty()) {
+                if (parentProduct.isEmpty() && trackStock) {
                     //no parent product 
                     db.execute("UPDATE PRODUCT_DATA SET PRODUCT_QTY='" + newQty + "'"
                             + " WHERE ID='" + prodId + "'");
-                } else {
+                } else if(trackStock) {
                     db.execute("UPDATE PRODUCT_DATA SET PRODUCT_QTY='" + newQty + "'"
                             + " WHERE ID='" + parentProduct + "'");
                 }
@@ -236,6 +234,7 @@ public class PosSaleService implements Serviceable {
         JSONObject discData = db.query("SELECT * FROM DISCOUNT_DATA WHERE ID = ?",prevTransId);
         JSONObject meta = db.query("SELECT * FROM POS_META_DATA WHERE SCOPE='reversed_sales' AND META_ID = '" + prevTransId + "'");
         boolean isReversed = meta.optJSONArray("META_ID").length() > 0;
+        boolean trackStock = OpenDataService.getSetting("track_stock").equals("1");
         if (isReversed) {
             //this sale has been reversed before so return an error
             return new Object[]{Message.FAIL, "Transaction already reversed"};
@@ -267,11 +266,11 @@ public class PosSaleService implements Serviceable {
             }
 
             Double newQty = productTotalqty + unitsSold;
-            if (parentProduct.isEmpty()) {
+            if (parentProduct.isEmpty() && trackStock) {
                 //no parent product 
                 db.execute("UPDATE PRODUCT_DATA SET PRODUCT_QTY='" + newQty + "'"
                         + " WHERE ID='" + prodId + "'");
-            } else {
+            } else if(trackStock) {
                 db.execute("UPDATE PRODUCT_DATA SET PRODUCT_QTY='" + newQty + "'"
                         + " WHERE ID='" + parentProduct + "'");
             }

@@ -63,6 +63,7 @@ App.prototype.saveSettings = function(){
                     title : "Info",
                     content : "Settings saved successfully"
                 });
+                app.fetchSettings();
             }
             else if (r === "fail") {
                 app.briefShow({
@@ -82,6 +83,12 @@ App.prototype.loadSettings = function () {
     //render settings from app.settings
     $.each(app.settings, function (setting) {
         app.renderDom(app.settings[setting], settingsArea);
+    });
+    //load the currencies
+    var currArea = $('#currency');
+    $.each(app.currencies,function(curr){
+        var country = app.currencies[curr].name;
+        currArea.append("<option value="+curr+">"+country+"</option>");
     });
     app.xhr({}, "open_data_service", "fetch_settings", {
         load: false,
@@ -269,10 +276,10 @@ App.prototype.allUsers = function () {
                     priv = "Seller";
                 }
                 else if (userData.privileges[x].indexOf("pos_middle_service") > -1) {
-                    priv = "Intermediate";
+                    priv = "Cashier";
                 }
                 privs[index] = priv;
-                created[index] = new Date(userData.CREATED[x]).toLocaleDateString();
+                created[index] = app.formatDate(userData.CREATED[x]);
                 
             });
             
@@ -339,11 +346,12 @@ App.prototype.profitAndLoss = function () {
         load: true,
         success: function (resp) {
             var pandl = resp.response.data;
-            console.log(pandl);
+            var startDate = app.formatDate(data.start_date.value,true);
+            var endDate = app.formatDate(data.end_date.value,true);
             app.paginate({
                 save_state: true,
                 save_state_area: "content_area",
-                title: "Profit And Loss between " + data.start_date.value + " and " + data.end_date.value + " ",
+                title: "Profit And Loss between " + startDate + " and " + endDate + " ",
                 onload_handler: app.pages.expenses,
                 onload: function () {
                     var items = ["<b>Sales</b>", "<b>Opening Stock</b>", "<b>Purchases</b>",
@@ -682,7 +690,7 @@ App.prototype.allProducts = function (handler) {
                     var bType = app.getSetting("business_type");
                     var headers, values,columns;
                     $.each(r.PRODUCT_NAME, function (index) {
-                        r.CREATED[index] = new Date(r.CREATED[index]).toLocaleDateString();
+                        r.CREATED[index] = app.formatDate(r.CREATED[index]);
                         r.PRODUCT_EXPIRY_DATE[index] = new Date(r.PRODUCT_EXPIRY_DATE[index]).toLocaleDateString();
                         r.BP_UNIT_COST[index] = app.formatMoney(r.BP_UNIT_COST[index]);
                         r.SP_UNIT_COST[index] = app.formatMoney(r.SP_UNIT_COST[index]);
@@ -825,8 +833,7 @@ App.prototype.goodsStockHistory = function () {
                         var undo = "<a href='#' onclick='app.undoSale(\"" + transId + "\")' title='Undo sale'>Undo Sale</a>";
                         flag === "sale_to_customer"  ? undos.push(undo) : undos.push("");
 
-                        var time = new Date(resp.CREATED[index]).toLocaleString();
-                        resp.CREATED[index] = time;
+                        resp.CREATED[index] = app.formatDate(resp.CREATED[index],false,true);
 
                         resp.STOCK_QTY[index] = "<span style='color :" + color + "'>" + resp.STOCK_QTY[index] + "</span>";
                         resp.STOCK_COST_SP[index] = "<span style='color :" + color + "'>" + app.formatMoney(resp.STOCK_COST_SP[index]) + "</span>";
@@ -1073,7 +1080,7 @@ App.prototype.commissionHistory = function(){
                             6: function (value, index) {
                                 if (index === (resp.PRODUCT_NAME.length - 1))
                                     return "";
-                                return new Date(value).toLocaleString();
+                                return app.formatDate(value,false,true);;
                             }
                         }
                     });
@@ -1087,7 +1094,6 @@ App.prototype.discountHistory = function () {
     app.reportHistory({
         success: function (data) {
             var resp = data.response.data;
-            console.log(resp);
             app.paginate({
                 title: "Discounts",
                 save_state: true,
@@ -1139,7 +1145,7 @@ App.prototype.discountHistory = function () {
                             6: function (value, index) {
                                 if (index === (resp.PRODUCT_NAME.length - 1))
                                     return "";
-                                return new Date(value).toLocaleString();
+                                return app.formatDate(value,false,true);
                             }
                         }
                     });
@@ -1204,7 +1210,7 @@ App.prototype.taxHistory = function () {
                             6: function (value, index) {
                                 if (index === (resp.PRODUCT_NAME.length - 1))
                                     return "";
-                                return new Date(value).toLocaleString();
+                                return app.formatDate(value,false,true);
                             }
                         }
                     });
@@ -1250,7 +1256,7 @@ App.prototype.supplierHistory = function(){
                                 return value === "0" ? "<span style='color:green'>Stock Out</span>" : "<span style='color:red'>Stock In</span>";
                             },
                             8: function (value) {
-                                return new Date(value).toLocaleString();
+                                return app.formatDate(value,false,true);
                             }
                         },
                         onRender: function (id) {
@@ -1270,7 +1276,6 @@ App.prototype.salesVolume = function(){
     app.reportHistory({
         success: function (data) {
             var resp = data.response.data;
-            console.log(resp);
             app.paginate({
                 title: "Sales Volume",
                 save_state: true,
@@ -1514,7 +1519,6 @@ App.prototype.deleteProduct = function () {
     app.xhr(requestData, app.dominant_privilege, "delete_product", {
         load: true,
         success: function (data) {
-            console.log(data);
             if (data.response.data === "SUCCESS") {
                 app.briefShow({
                     title: "Info",
@@ -1638,7 +1642,15 @@ App.prototype.stockExpiry = function (handler) {
                         values : [resp.PRODUCT_NAME, resp.PRODUCT_EXPIRY_DATE, resp.CREATED],
                         include_nums : true,
                         style : "",
-                        mobile_collapse : true
+                        mobile_collapse : true,
+                        transform : {
+                            1 : function(value){
+                                return app.formatDate(value,true);
+                            },
+                            2 : function(value){
+                                return app.formatDate(value,false,true);
+                            }
+                        }
                     });
                 }
             });
@@ -1664,7 +1676,12 @@ App.prototype.stockLow = function (handler) {
                         values : [resp.PRODUCT_NAME, resp.PRODUCT_QTY, resp.PRODUCT_REMIND_LIMIT, resp.CREATED],
                         include_nums : true,
                         style : "",
-                        mobile_collapse : true
+                        mobile_collapse : true,
+                        transform: {
+                            3: function (value) {
+                                return app.formatDate(value, false, true);
+                            }
+                        }
                     });
                 }
             });
@@ -1742,7 +1759,6 @@ App.prototype.graphData = function(){
     app.xhr(request, app.dominant_privilege, "graph_data", {
         load: true,
         success: function (data) {
-            console.log(data);
             var r = data.response.data;
             $("#graph_area").html("");
             Morris.Line({
@@ -1751,7 +1767,13 @@ App.prototype.graphData = function(){
                 data: r, 
                 xkey: "date", 
                 ykeys: categories, 
-                labels: categories
+                labels: categories,
+                dateFormat: function (d) {
+                    return app.formatDate(d);
+                },
+                xLabelFormat: function (d) {
+                    return app.formatDate(d);
+                }
             });
         }
     });
@@ -1795,14 +1817,14 @@ App.prototype.max = function(values){
 
 App.prototype.showGlance = function(){
     var headers = ["Sales","Cost of Goods","Margin","Taxes",
-        "Discounts","Expenses","Incomes","Best selling product","Top earning product"];
+        "Discounts","Commissions","Expenses","Incomes","Best selling product","Top earning product"];
     var categories = ["sales", "cost of goods", "margin",
-        "taxes", "discounts", "commissions", "incomes", "expenses"];
+        "taxes", "discounts", "commissions", "expenses","incomes"];
     var request1 = {
         prod_ids: ["all", "all", "all", "all", "all", "all", "all", "all"],
         categories: categories,
         begin_date: app.getDate(-7) + " 00:00:00",
-        end_date: app.getDate(0) + " 23:59:59",
+        end_date: app.getDate(0) + " 23:59:59"
     };
 
     app.xhr(request1, app.dominant_privilege, "graph_data", {
@@ -1851,6 +1873,7 @@ App.prototype.showGlance = function(){
                             lastWeek.discounts = 0;
                             lastWeek.expenses = 0;
                             lastWeek.incomes = 0;
+                            lastWeek.commissions = 0;
                             $.each(r1, function (x) {
                                 if (r1[x]) {
                                     if (r1[x].sales) 
@@ -1867,20 +1890,27 @@ App.prototype.showGlance = function(){
                                         lastWeek.expenses = lastWeek.expenses + r1[x].expenses;
                                     if (r1[x].incomes)
                                         lastWeek.incomes = lastWeek.incomes + r1[x].incomes;
+                                    if (r1[x].commissions)
+                                        lastWeek.commissions = lastWeek.commissions + r1[x].commissions;
                                 }
                             });
                             var bestSellYester = r2.names[r2.units.indexOf(app.max(r2.units))];
                             var topEarnerYester = r2.names[r2.cost_sp.indexOf(app.max(r2.cost_sp))];
                             var bestSellToday = r3.names[r3.units.indexOf(app.max(r3.units))];
                             var topEarnerToday = r3.names[r3.cost_sp.indexOf(app.max(r3.cost_sp))];
+                            
                             var yesterValues = !yester ? [] : [yester.sales, yester["cost of goods"],
-                                yester.margin, yester.taxes, yester.discounts, yester.expenses, yester.incomes, bestSellYester, topEarnerYester];
+                                yester.margin, yester.taxes, yester.discounts, yester.commissions,
+                                yester.expenses, yester.incomes,bestSellYester, topEarnerYester];
+                            
                             var todayValues = !today ? [] : [today.sales, today["cost of goods"],
-                                today.margin, today.taxes, today.discounts, today.expenses, today.incomes,bestSellToday,topEarnerToday];
+                                today.margin, today.taxes, today.discounts,today.commissions, 
+                                today.expenses, today.incomes,bestSellToday,topEarnerToday];
+                            
                             var lastWeekValues = !lastWeek ? [] : [lastWeek.sales, lastWeek["cost of goods"],
-                                lastWeek.margin, lastWeek.taxes, lastWeek.discounts, lastWeek.expenses, lastWeek.incomes,'',''];
-                            console.log(lastWeek);
-                            console.log(lastWeekValues);
+                                lastWeek.margin, lastWeek.taxes, lastWeek.discounts,lastWeek.commissions,
+                                lastWeek.expenses, lastWeek.incomes,'',''];
+                           
                             app.ui.table({
                                 id_to_append: "glance_area",
                                 headers: ["Category", "Today", "Yesterday","Last 7 days"],
@@ -1890,15 +1920,15 @@ App.prototype.showGlance = function(){
                                 mobile_collapse: false,
                                 transform: {
                                     1: function (value,index) {
-                                        if(index === 7 || index === 8) return value;
+                                        if(index === 8 || index === 9) return value;
                                         return !value ? 0 : app.formatMoney(value);
                                     },
                                     2: function (value,index) {
-                                        if(index === 7 || index === 8) return value;
+                                        if(index === 8 || index === 9) return value;
                                         return !value ? 0 : app.formatMoney(value);
                                     },
                                     3: function (value, index) {
-                                        if (index === 7 || index === 8)
+                                        if (index === 8 || index === 9)
                                             return value;
                                         return !value ? 0 : app.formatMoney(value);
                                     }
@@ -1910,7 +1940,13 @@ App.prototype.showGlance = function(){
                                 data: r1Copy,
                                 xkey: "date",
                                 ykeys: categories,
-                                labels: categories
+                                labels: categories,
+                                dateFormat : function(d){
+                                    return app.formatDate(d);
+                                },
+                                xLabelFormat: function (d) {
+                                    return app.formatDate(d);
+                                }
                             });
                         }});
                 }
@@ -1919,4 +1955,121 @@ App.prototype.showGlance = function(){
     });
 };
 
-//67407
+App.prototype.uploadProductExcel = function(){
+    var m = app.ui.modal("<div id='product_load_area' style='overflow:auto;height:600px'></div>",'Upload Excel File',{
+        okText : "Done",
+        ok : function(){
+            m.modal('hide');
+        }
+    });
+    var requiredHeaders = ['product_name', 'product_quantity', 'product_category',
+        'product_sub_category','product_bp_unit_cost', 'product_sp_unit_cost'];
+    var realNames =  ['Product Name','Quantity','Category','Sub Category','Buying Unit Cost',
+                 'Selling Unit Cost','Low Stock Limit','Expiry Date','Description','Maximum Discount',
+                  'Tax Percentage','Commission'];
+    var foundHeaders = [];
+    var alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    var tableId = app.ui.table({
+        id_to_append: "product_load_area",
+        headers: ["Excel Column Headers","Required","Full Name","Data Format"],
+        values: [['product_name','product_quantity','product_category','product_sub_category',
+                'product_bp_unit_cost','product_sp_unit_cost','product_reminder_limit',
+                'product_expiry_date','product_narration','max_discount','tax','commission'],
+                 ['Yes','Yes','Yes','Yes','Yes','Yes','No','No','No','No','No','No'],
+                realNames,
+              ['Text','Number','Text','Text','Number','Number','Number','Date','Text','Number',
+              'Number','Number']],
+        include_nums: false,
+        style: ""
+    });
+    $("#product_load_area").append("<input class='btn' id='choose_file' type='file'>");
+    $("#product_load_area").append("<p class='warning' style='margin-top:10px'>\n\
+            Place your products in the first worksheet.Please note that if a product \n\
+            with the same name already exists it will not be recreated.</p>");
+    $("#choose_file").change(handleFile);
+    function handleFile(e) {
+        var files = e.target.files;
+        var i, f;
+        for (i = 0, f = files[i]; i !== files.length; ++i) {
+            var reader = new FileReader();
+            var name = f.name;
+            reader.onload = function (e) {
+                var data = e.target.result;
+                var workbook = XLSX.read(data, {type: 'binary'});
+                var firstSheet = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheet];
+                for (var z in worksheet) {
+                    //read headers first
+                    /* all keys that do not begin with "!" correspond to cell addresses */
+                    if (z[0] === '!') continue;
+                    if(z[1] === '1'){
+                        //we are dealing with headers
+                        foundHeaders.push(worksheet[z].v);
+                    }
+                    else {
+                        break;
+                    }
+                   
+                }
+                //check that we have all the headers
+                for(var x = 0; x < requiredHeaders.length; x++){
+                    if(foundHeaders.indexOf(requiredHeaders[x]) === -1){
+                        //this header is missing so complain about it
+                        $("#"+tableId).html("<b>"+requiredHeaders[x]+"</b> referring to <b>"+realNames[x]+"</b> is a required \n\
+                            column, it is missing from your excel file, please add it and retry.");
+                        $('#choose_file').val('');
+                        return;
+                    }
+                }
+                //start creating the products
+                $("#product_load_area").html("");
+                var requestData = {
+                    business_type : app.getSetting("business_type"),
+                    product_unit_size : 1
+                };
+                var lastCol = foundHeaders[foundHeaders.length - 1];
+                $("#product_load_area").append("");
+                var statTable = app.ui.table({
+                    id_to_append: "product_load_area",
+                    headers: ["Product Name", "Creation Status", "Failure Reason"],
+                    values: [[],[],[]],
+                    include_nums: false,
+                    style: ""
+                });
+                for (var z in worksheet) {
+                    //read headers first
+                    /* all keys that do not begin with "!" correspond to cell addresses */
+                    if (z[0] === '!') continue;
+                    if (z[1] === '1') continue; //skip headers
+                    var currCol = foundHeaders[alpha.indexOf(z[0])];
+                    var currVal = worksheet[z].v;
+                    if(currCol === lastCol){
+                        requestData[lastCol] = currVal;
+                        var rq = $.extend(true, {}, requestData);
+                        //send the create product request
+                        app.xhr(rq, app.dominant_privilege, "create_product", {
+                            load: false,
+                            success: function (data,request) {
+                                if (data.response.data === "SUCCESS") {
+                                    $("#" + statTable).append("<tr><td>" + request.product_name + "</td>\n\
+                                        <td>" + data.response.data + "</td><td></td></tr>");
+                                }
+                                else if (data.response.data === "FAIL") {
+                                    $("#" + statTable).append("<tr><td>" + request.product_name + "</td>\n\
+                                        <td>" + data.response.data + "</td><td>"+data.response.reason+"</td></tr>");
+                                }
+                            }
+                        });
+                    }
+                    else {
+                        requestData[currCol] = currVal;
+                    }
+                }
+                
+            };
+            reader.readAsBinaryString(f);
+        }
+    }
+};
+
+

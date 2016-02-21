@@ -361,8 +361,8 @@ AppData.prototype.formData = {
                 product_bp_unit_cost: {required: true, message: "Product buying price per unit is required", sign: "+"},
                 product_sp_unit_cost: {required: true, message: "Product selling price per unit is required", sign: "+"},
                 max_discount :{required:false,sign : "+"},
-                product_reminder_limit: {required: true, message: "Product reminder limit is required", sign: "+"},
-                product_expiry_date: {required: true, message: "Product expiry date required"},
+                product_reminder_limit: {required: false, message: "Product reminder limit is required", sign: "+"},
+                product_expiry_date: {required: false, message: "Product expiry date required"},
                 product_narration: {required: false},
                 tax: {required: false, sign: "+"},
                 commission: {required: false, sign: "+"}

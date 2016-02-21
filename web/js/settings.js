@@ -86,8 +86,8 @@ App.prototype.settings = {
     currency: {
         type: "select",
         id: "currency",
-        option_names: ["KES", "USD"],
-        option_values: ["KES", "USD"],
+        option_names: [],
+        option_values: [],
         required: true,
          "class" : "form-control",
         selected: "KES",
@@ -116,11 +116,19 @@ App.prototype.settings = {
     date_format: {
         type: "select",
         id: "date_format",
-        option_names: ["dd/mm/yyyy","yyyy/mm/dd","mm/dd/yyyy"],
-        option_values: ["dd/mm/yyyy","yyyy/mm/dd","mm/dd/yyyy"],
+        option_names: ["dd/MM/yyyy","yyyy/MM/dd","MM/dd/yyyy"],
+        option_values: ["dd/MM/yyyy","yyyy/MM/dd","MM/dd/yyyy"],
         required: true,
         "class": "form-control",
         label: "Date Format"
+    },
+    no_of_decimals: {
+        type: "text",
+        id: "no_of_decimals",
+        required: false,
+        value: "2",
+        label: "Number of Decimals",
+        "class": "form-control"
     },
     no_of_receipts: {
         type : "number",
